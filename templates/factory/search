@@ -1,0 +1,8 @@
+<div id="search">
+<fieldset>
+<legend>Search for <% $request->model_class->plural_moniker %></legend>
+<% $request->search_form( reset  => 'reset', 
+                          submit => 'search',
+                          )->render %>
+</fieldset>
+</div>

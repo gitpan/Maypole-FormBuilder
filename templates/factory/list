@@ -1,0 +1,32 @@
+
+<h2><% eval '$search' ? 'Search results: ' : 'Navigable listing of all ' %>
+<% $request->model_class->plural_moniker %></h2>
+
+<div class="NavListTable"><% $request->quick_table( labels => 'T' )->render( @data ) %></div>
+
+<p><% $request->link( table  => $request->model_class->table,
+                      action => 'editlist',
+                      label  => 'Change to editable list view',
+                      ) %></p>
+                    
+<& pager &>
+<& addnew &>
+<& search &>
+
+<%init>
+    
+    my $callback = sub 
+    {
+        my ( $object ) = @_;
+        
+        return $request->as_form( mode => 'edit_button',   entity => $object )->render . 
+               $request->as_form( mode => 'delete_button', entity => $object )->render;
+    };
+
+    my @data = $request->tabulate( $objects, with_colnames => 1, callback => $callback );
+    
+    my $i = 0;
+    
+    push @{ $data[0] }, 'Actions';
+    
+</%init>

@@ -1,0 +1,9 @@
+
+<h2>Edit a <% $request->model_class->moniker %></h2>
+
+% foreach my $item ( @$objects ) {
+<fieldset>
+<legend>Edit <% $item->get( $item->stringify_column ) %></legend>
+<% $request->as_form( reset => 'reset', submit => 'submit' )->render %>
+</fieldset>
+% }

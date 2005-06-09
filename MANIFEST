@@ -1,0 +1,27 @@
+Build.PL
+Changes
+lib/Maypole/FormBuilder.pm
+lib/Maypole/FormBuilder/Model.pm
+lib/Maypole/FormBuilder/Model/Base.pm
+lib/Maypole/FormBuilder/View.pm
+lib/Maypole/Plugin/FormBuilder.pm
+MANIFEST
+META.yml			# Will be created by "make dist"
+README
+t/00-load.t
+t/pod-coverage.t
+t/pod.t
+templates/beer/css/beer.css
+templates/factory/addnew
+templates/factory/autohandler
+templates/factory/css/maypole.css
+templates/factory/dhandler
+templates/factory/edit
+templates/factory/editlist
+templates/factory/frontpage
+templates/factory/list
+templates/factory/pager
+templates/factory/search
+templates/factory/view
+templates/factory/view_related
+Makefile.PL
