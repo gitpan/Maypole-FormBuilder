@@ -12,6 +12,9 @@ use Class::DBI::Plugin::RetrieveAll;
 
 use Class::DBI::FormBuilder;
 
+use Maypole::FormBuilder;
+our $VERSION = $Maypole::FormBuilder::VERSION;
+
 #use Class::DBI::Pager; - now loaded in MP::FB::setup()
 
 #use Data::Dumper;
@@ -167,7 +170,7 @@ So to get searching working, the C<do_search> mode needs to be set. Similarly fo
 except here the C<edit> mode needs to be set. Elsewhere the mode is automatically set to the 
 Maypole action. If you insert a line in CGI::FormBuilder::submitted() to 
 C<warn> the value of C<$smtag>, that needs to match the name of the submit button in 
-C<$request->params> (i.e. C<$request->params->{$smtag}> needs to be true). 
+C<< $request->params >> (i.e. C<< $request->params->{$smtag} >> needs to be true). 
 
 =over 4
 
@@ -206,7 +209,7 @@ sub addnew : Exported
 The C<addnew> form on the editable list page submits to this method, which wraps 
 C<addnew>.
 
-It is pretty tedious to use the current method of maintaining the interface either in 
+It is pretty tedious to use this method of maintaining the interface either in 
 the C<editlist> or the plain C<list> mode, so expect this to change at some point. Might 
 be easiest to use L<Maypole::Plugin::Session|Maypole::Plugin::Session>. Most other buttons 
 and links return the user to the plain C<list> view at the moment. 
@@ -350,6 +353,23 @@ sub list : Exported
     #}    
 }
 
+=item do_delete
+
+Deletes a single object. 
+
+=cut
+
+sub do_delete : Exported 
+{
+    my ( $self, $r ) = @_;
+    
+    my $goner = @{ $r->objects || [] }[0];
+    
+    $goner && $goner->delete;
+    
+    $self->list( $r );
+}
+
 # -------------------------------------------------------- other Maypole::Model::CDBI methods -----
 
 =back 
@@ -367,7 +387,7 @@ See that module for documentation.
 
 =item stringify_column
 
--item adopt
+=item adopt
 
 =item do_pager
 

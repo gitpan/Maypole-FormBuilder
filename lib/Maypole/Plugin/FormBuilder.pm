@@ -9,7 +9,8 @@ use UNIVERSAL::require;
 use Maypole::Config;
 Maypole::Config->mk_accessors( qw( form_builder_defaults pager_class ) );
 
-our $VERSION = 0.01;
+use Maypole::FormBuilder;
+our $VERSION = $Maypole::FormBuilder::VERSION;
 
 =head1 NAME
 
@@ -154,11 +155,11 @@ sub init
 
 =item as_form
 
-This returns a L<CGI::FormBuilder|CGI::FormBuilder> object. Accepts any parameters that C<CGI::FormBuilder|CGI::FormBuilder->new()> accepts. 
+This returns a L<CGI::FormBuilder|CGI::FormBuilder> object. Accepts any parameters that 
+C<< CGI::FormBuilder->new() >> accepts. 
 
-Defaults are as in L<CGI::FormBuilder|CGI::FormBuilder>.
-    
-Change defaults in the C<form_builder_default> Maypole config slot.
+Defaults are as in L<CGI::FormBuilder|CGI::FormBuilder>, you can alter them using 
+the C<form_builder_default> Maypole config slot.
 
 There are a few additional Maypole-specific options:
     
@@ -169,7 +170,7 @@ There are a few additional Maypole-specific options:
 The form generated depends on the C<mode>. Defaults to the current action.
 
 Pass this argument to generate a different form from that specified by the current 
-value of C<<$r->action>>. For instance, to generate a search form to include on a 
+value of C<< $r->action >>. For instance, to generate a search form to include on a 
 list template, say 
 
     print $r->as_form( mode => 'do_search' )->render;
@@ -181,7 +182,7 @@ L<Maypole::FormBuilder::Model::Base|Maypole::FormBuilder::Model::Base>.
 =item entity
 
 Normally, C<as_form> builds a form based on the first object 
-in C<<$r->objects>>, or based on the current model (C<<$r->model_class>>) if there are no 
+in C<< $r->objects >>, or based on the current model (C<< $r->model_class >>) if there are no 
 objects. To use a different object or model, pass it in the C<entity> argument:
 
     my $form = $r->as_form( entity => $class_or_object );
@@ -294,8 +295,8 @@ and returns the generated HTML as a single string. If C<with_colnames> is also t
 
 If C<render> is false, returns a list containing the form objects.
 
-You will probably want to set C<no_textareas> to true (converts them to text inputs>, and perhaps 
-reduce C<selectnum> ( see the C<list> template in this distribution).
+You will probably want to set C<no_textareas> to true (converts them to text inputs), and perhaps 
+reduce C<selectnum> ( see the C<editlist> template in this distribution).
 
 This method may change in the future. I don't like having two output modes from one method, 
 and it would be nicer to use L<Maypole::Plugin::QuickTable|Maypole::Plugin::QuickTable> to 
@@ -450,7 +451,7 @@ Defaults that apply to all forms.
 
 =head1 Configuring custom actions
 
-Custom actions may require custom configuration of the form object (in addition to providing an Exported method in your model class to support the new action). Write a C<setup_action_on_form> 
+Custom actions may require custom configuration of the form object (in addition to providing an Exported method in your model class to support the new action). Write a C<setup_form_mode> 
 method in your model class. See 
 L<Maypole::Plugin::FormBuilder::Model::Base|Maypole::Plugin::FormBuilder::Model::Base>.
 

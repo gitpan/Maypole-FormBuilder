@@ -5,6 +5,9 @@ use strict;
 
 use base 'Maypole::Model::Base';
 
+use Maypole::FormBuilder;
+our $VERSION = $Maypole::FormBuilder::VERSION;
+
 =head1 NAME
 
 Maypole::FormBuilder::Model::Base
@@ -15,11 +18,11 @@ Maypole::FormBuilder::Model::Base
 
 =item setup_form_mode
 
-Returns a form spec for the selected form mode. The mode defaults to C<<$r->action>>. 
-Set a different mode in the args hash to the C<as_form> call. Mostly, this method is 
+Returns a form spec for the selected form mode. The mode defaults to C<< $r->action >>. 
+You can set a different mode in the args hash to the C<as_form> call. Mostly, this method is 
 responsible for setting the C<action> parameter of the form. 
 
-Override in model classes to configure custom modes, and call 
+Override this in model classes to configure custom modes, and call 
 
     $proto->SUPER::setup_form_mode( $r, $args )
     
@@ -119,23 +122,6 @@ sub edit : Exported
     my ( $self, $r ) = @_;
     
     $r->template( 'edit' );
-}
-
-=item do_delete
-
-Deletes a single object. 
-
-=cut
-
-sub do_delete : Exported 
-{
-    my ( $self, $r ) = @_;
-    
-    my $goner = @{ $r->objects || [] }[0];
-    
-    $goner && $goner->delete;
-    
-    $self->list( $r );
 }
 
 =back 

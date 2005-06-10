@@ -1,5 +1,10 @@
 Revision history for Maypole-FormBuilder
 
+0.11   Fri  10 Jun 2005, 11:55
+        - morning after the night before POD fixes
+        - all modules load MP::FB and use its VERSION 
+        - moved do_delete() from MP::FB::Model::Base to MP::FB::Model
+
 0.1    Thur  9 Jun 2005, 22:45
         First version, released on an unsuspecting world.
 

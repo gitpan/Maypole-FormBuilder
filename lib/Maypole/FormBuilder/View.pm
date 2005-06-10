@@ -2,6 +2,9 @@ package Maypole::FormBuilder::View;
 use strict;
 use warnings;
 
+use Maypole::FormBuilder;
+our $VERSION = $Maypole::FormBuilder::VERSION;
+
 =over
 
 =item vars
