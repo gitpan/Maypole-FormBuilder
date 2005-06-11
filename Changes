@@ -1,5 +1,11 @@
 Revision history for Maypole-FormBuilder
 
+0.12   Sat  11 Jun 2005, 21:45
+        - Fixed a bug in Maypole::Plugin::FormBuilder::setup(). The vars() method 
+            in the view class was removing classmetadata from _all_ apps in the 
+            current interpreter that used the same view as the FB app. Bad for 
+            mod_perl.
+
 0.11   Fri  10 Jun 2005, 11:55
         - morning after the night before POD fixes
         - all modules load MP::FB and use its VERSION 

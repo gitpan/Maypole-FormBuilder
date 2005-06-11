@@ -6,10 +6,12 @@ use strict;
 use NEXT;
 use UNIVERSAL::require;
 
+use Maypole::FormBuilder::View;
 use Maypole::Config;
+use Maypole::FormBuilder;
+
 Maypole::Config->mk_accessors( qw( form_builder_defaults pager_class ) );
 
-use Maypole::FormBuilder;
 our $VERSION = $Maypole::FormBuilder::VERSION;
 
 =head1 NAME
@@ -140,17 +142,26 @@ sub setup
 sub init
 {
     my ( $class ) = @_;
+    
+    my $config = $class->config;
 
     $class->NEXT::DISTINCT::init;
     
-    my $view = $class->config->view ||
+    my $old_view = $class->config->view ||
         die "Please configure a view in $class before calling init()";
         
-    Maypole::FormBuilder::View->require || die $@;
+    my $virtual_view = "$class\::__::View";
     
-    # override vars()
-    no strict 'refs';
-    unshift @{"$view\::ISA"}, 'Maypole::FormBuilder::View';
+    eval <<VIEW;
+package $virtual_view; 
+use base qw( Maypole::FormBuilder::View $old_view );
+VIEW
+          
+    die $@ if $@;
+    
+    $config->view( $virtual_view );
+    
+    $class->view_object( $class->config->view->new );
 }
 
 =item as_form
