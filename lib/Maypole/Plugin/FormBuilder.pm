@@ -25,10 +25,16 @@ Maypole::Plugin::FormBuilder - CGI::FormBuilder for Maypole
     use strict;
     
     use Class::DBI::Loader::Relationship;
+    use Apache::Session::File();
     
-    use Maypole::Application qw( FormBuilder QuickTable );
+    use Maypole::Application qw( FormBuilder QuickTable Session );
     
     BeerFB->config->model( 'Maypole::FormBuilder::Model' );
+    
+    BeerFB->config->session( { args => { Directory     => "/tmp/sessions/beerfb",
+                                         LockDirectory => "/tmp/sessions/beerfb",
+                                         },
+                               } );
     
     # note: the latest development version is broken
     #BeerFB->config->pager_class( 'Class::DBI::Plugin::Pager' );
@@ -107,6 +113,12 @@ Includes an alternative Maypole model, which should be set up in your config:
 B<Note> that a new C<vars> method is installed, which removes the 
 C<classmetadata> functionality. It just seemed like an extra level of API to learn, 
 and we don't need the L<Class::DBI::AsForm|Class::DBI::AsForm> stuff.
+
+=head2 Sessions
+
+The demo application (shown in the synopsis) uses sessions to keep track of the user's 
+preferred list view mode (editlist or plain list). The demo should work without sessions, 
+but it will not show the editable list view.  
 
 =head1 METHODS
 
@@ -253,6 +265,10 @@ sub search_form
     
     my $spec = $class->setup_form_mode( $r, \%args );
     
+    # remember search terms if the current request is processing a search form
+    #my $sticky = $r->action =~ /^(?:do_)?search$/ ? 1 : 0;
+    $spec->{sticky} = $r->action =~ /^(?:do_)?search$/;
+    
     return $class->search_form( %$spec );
 }
     
@@ -264,7 +280,7 @@ sub _get_form_args
     %args = ( %{ $r->config->form_builder_defaults }, 
               %args,
               );
-    
+              
     $args{mode} ||= $r->action;
     
     $args{fields} ||= [ map {''.$_} $proto->display_columns ]; 
@@ -284,10 +300,9 @@ sub _get_form_args
     # Need to use a separator that is legal in javascript function names (not .) and 
     # CSS identifiers (not _ ?). Need to use a separator in case of multiple primary columns.
     # CGI::FB will still add an underscore to some identifiers though. 
-    $args{name} ||= join( 'x', @name ); 
+    $args{name} ||= join( '_', @name ); 
                           
-    $args{name} =~ s/[^\w]+/x/g;
-    $args{name} =~ s/_+/x/g;
+    $args{name} =~ s/[^\w]+/_/g;
 
     return %args;
 }
@@ -295,23 +310,14 @@ sub _get_form_args
 =item as_forms( %args )
 
     %args = ( objects       => $object|$arrayref_of_objects,    defaults to $r->objects
-              with_colnames => true|false value,                default false
-              render        => true|false value,                default false
               no_textareas  => true|false value,                default false
               %other_form_args,
               );
 
-Generates multiple forms. If C<render> is true, calls C<render> on each form 
-and returns the generated HTML as a single string. If C<with_colnames> is also true, the HTML table includes a row of column names. 
-
-If C<render> is false, returns a list containing the form objects.
+Generates multiple forms and returns them as a list.
 
 You will probably want to set C<no_textareas> to true (converts them to text inputs), and perhaps 
-reduce C<selectnum> ( see the C<editlist> template in this distribution).
-
-This method may change in the future. I don't like having two output modes from one method, 
-and it would be nicer to use L<Maypole::Plugin::QuickTable|Maypole::Plugin::QuickTable> to 
-build the rendered output. 
+reduce C<selectnum> ( see the C<list> template in this distribution).
 
 =cut
 
@@ -320,23 +326,15 @@ sub as_forms
     my ( $r, %args ) = @_;
     
     my $objects       = delete $args{objects} || $r->objects;
-    my $with_colnames = delete $args{with_colnames};
-    my $render        = delete $args{render};
     my $no_textareas  = delete $args{no_textareas};
     
     my @objects = ref( $objects ) eq 'ARRAY' ? @$objects : ( $objects );
-    
-    #warn "Got objects: @objects";
     
     my @forms;
     
     foreach my $object ( @objects )
     {
-        #warn "Building form for $object";
-        
         my $form = $r->as_form( %args, entity => $object );
-        
-        #warn "Form name: " . $form->field( 'name' );
         
         push @forms, $form;
         
@@ -351,36 +349,17 @@ sub as_forms
         }   
     }
     
-    return @forms unless $render;
-    
-    #warn "Form name is now: " . $_->field( 'name' ) for @forms;
-    
-    # OK, sue me, this is view stuff in the controller:    
-    my $html = '';
-    
-    if ( $with_colnames )
-    {
-        # assume they're all in the same class
-        my %names = $objects[0]->column_names;
-        $html .= "<tr>\n";
-        $html .= "<th>$names{ $_ }</th>" for $objects[0]->display_columns;
-        
-        my $num_buttons = @{ $args{submit} };
-        $num_buttons++ if $args{reset};
-        
-        $html .= qq(<th colspan="$num_buttons">Actions</th>);
-        $html .= "\n</tr>\n";
-    }
-    
-    $html .= $r->_render_for_list( $_ ) for @forms;
-    
-    $html = $forms[0]->table . "\n$html\n</table>\n";
-
-    return $html;
+    return @forms;
 }    
+
+=item render_form_as_row( $form )
+
+Returns a form marked up as a single row for a table. 
+
+=cut
     
 # chopped out of CGI::FormBuilder::render()
-sub _render_for_list
+sub render_form_as_row
 {
     my ( $r, $form ) = @_;
     
@@ -458,6 +437,32 @@ Defaults that apply to all forms.
     # make all forms POST their data
     BeerFB->config->form_builder_defaults->{method} = 'post';
 
+=item listviewmode
+
+A convenience method to allow the default templates 
+to work without a session. With no session configured, always returns C<list>. With a session, 
+returns/sets the list view mode, which can be C<list> or C<editlist>.
+
+=cut
+
+sub listviewmode
+{
+    my ( $r, $new_mode ) = @_;
+    
+    return 'list' unless $r->can( 'session' );
+    
+    my $mode = $r->session->{listviewmode} || 'list';
+    
+    return $mode unless $new_mode;
+    
+    die "List view mode must be 'list' or 'editlist'" 
+        unless $new_mode =~ /^(?:edit)?list$/;
+        
+    $r->session->{listviewmode} = $new_mode;
+    
+    return $mode;
+}
+
 =back
 
 =head1 Configuring custom actions
@@ -476,6 +481,10 @@ L<Maypole::FormBuilder::Model::Base|Maypole::FormBuilder::Model::Base>.
 David Baird, C<< <cpan@riverside-cms.co.uk> >>
 
 =head1 BUGS
+
+The way the pager is loaded (in setup()) means that every Maypole app in the current 
+interpreter that uses the same model, will be using the same pager. I've no immediate plans 
+to fix this unless someone asks me.
 
 Please report any bugs or feature requests to
 C<bug-maypole-formbuilder@rt.cpan.org>, or through the web interface at

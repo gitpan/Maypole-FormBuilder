@@ -1,7 +1,7 @@
 <div id="addnew">
 <fieldset>
 <legend>Add a new <% $request->model_class->moniker %></legend>
-<% $request->as_form( mode   => $mode,
+<% $request->as_form( mode   => 'addnew',
                       entity => $request->model_class,
                       reset  => 'reset',
                       submit => 'submit',
@@ -9,7 +9,3 @@
                       )->render %>
 </fieldset>
 </div>
-
-<%args>
-    $mode => 'addnew'
-</%args>

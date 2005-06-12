@@ -1,20 +1,16 @@
+% my $listview = sprintf '.%sview', $request->listviewmode; # list or editlist
 
-<h2><% eval '$search' ? 'Search results: ' : 'Navigable listing of all ' %>
-<% $request->model_class->plural_moniker %></h2>
+<h2><% eval '$search' ? 'Search results: ' : '' %><% ucfirst( $request->model_class->plural_moniker ) %></h2>
 
-<div class="NavListTable"><% $request->quick_table( labels => 'T' )->render( @data ) %></div>
-
-<p><% $request->link( table  => $request->model_class->table,
-                      action => 'editlist',
-                      label  => 'Change to editable list view',
-                      ) %></p>
-                    
-<& pager &>
-<& addnew &>
-<& search &>
-
-<%init>
+<& .switch   &>
+<& $listview &>
+<& pager     &>
+<& addnew    &>
+<& search    &>
     
+% # -------------------------------------
+<%def .listview>
+<%perl>
     my $callback = sub 
     {
         my ( $object ) = @_;
@@ -28,5 +24,54 @@
     my $i = 0;
     
     push @{ $data[0] }, 'Actions';
-    
-</%init>
+</%perl>
+<div class="NavListTable"><% $request->quick_table( labels => 'T' )->render( @data ) %></div>
+</%def>
+
+% # -------------------------------------
+<%def .editlistview>
+<%perl>
+    # Note: turn off stickiness. Otherwise, all the forms will display the values submitted 
+    # in the previous action, e.g. addnew.
+    my @forms = $request->as_forms( submit          => [ qw( view update edit delete ) ],
+                                    reset           => 'reset',
+                                    selectnum       => 2,
+                                    mode            => 'editlist',
+                                    no_textareas    => 1,
+                                    sticky          => 0, 
+                                    jsfunc          => qq(
+if (form._submit.value == "delete") {
+    if (confirm("Really DELETE this entry?")) return true;
+    return false;
+}
+),
+                                    );
+
+    my %names = $objects->[0]->column_names;
+                                    
+</%perl>
+<div class="FormListTable">
+<table border="0">
+<tr>
+% foreach my $col ( $objects->[0]->display_columns ) {
+<th><% $names{ $col } %></th>
+% }
+<th colspan="5">Actions</th>
+</tr>
+% foreach my $form ( @forms ) {
+<% $request->render_form_as_row( $form ) %>
+% }
+</table>
+</div>
+</%def>
+
+% # -------------------------------------
+<%def .switch>
+% my $other = $request->listviewmode eq 'editlist' ? 'navigable' : 'editable';
+<p class="subheading">
+<% $request->link( table  => $request->model_class->table,
+                   action => 'switchlistmode',
+                   label  => "Switch to $other list view",
+                   ) %>
+</p>
+</%def>

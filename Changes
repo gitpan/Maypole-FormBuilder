@@ -1,5 +1,24 @@
 Revision history for Maypole-FormBuilder
 
+0.2    Sun  12 Jun 2005, 17:20
+        - fixed the editlist mode, so all the buttons now work (unsetting sticky 
+            forms was the key - otherwise, all the forms adopted the values in 
+            the submitted request)
+        
+        - added sessions to the demo app, to keep track of the list view mode
+            - various modifications to methods in MP::FB::Model
+            - added switchlistmode() exported method
+            
+        - MP::Plugin::FB:
+            - removed HTML rendering mode from MP::Plugin::FB::as_forms()
+            - added MP::Plugin::FB::render_form_as_row()
+            - added MP::Plugin::FB::listviewmode() to return the list view mode from the 
+                session (or 'list' if no session is available)
+        
+        - templates:
+            - removed the editlist template - it's all in the list template now
+            - removed hacks from pager and addnew templates to support different list view modes
+
 0.12   Sat  11 Jun 2005, 21:45
         - Fixed a bug in Maypole::Plugin::FormBuilder::setup(). The vars() method 
             in the view class was removing classmetadata from _all_ apps in the 

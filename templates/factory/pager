@@ -47,15 +47,11 @@ to the L<Data::Page> interface.
 #            }
 </%perl>
 <% $request->link( table      => $request->model_class->table,
-                   action     => $action,
+                   action     => 'list',
                    additional => $args,
                    label      => $num,
                    ) %>
 % }
 % }
 </p>
-
-<%args>
-    $action => 'list'
-</%args>
 

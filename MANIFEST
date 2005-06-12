@@ -17,7 +17,6 @@ templates/factory/autohandler
 templates/factory/css/maypole.css
 templates/factory/dhandler
 templates/factory/edit
-templates/factory/editlist
 templates/factory/frontpage
 templates/factory/list
 templates/factory/pager

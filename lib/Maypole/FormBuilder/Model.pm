@@ -187,40 +187,13 @@ sub addnew : Exported
 {
     my ( $self, $r ) = @_;
     
-    # This is a bad hack and needs a new mechanism. It's keeping the user in the 
-    # editlist view if that's where they came from.
-    my $list = (caller(1))[3] =~ /addnew_to_editlist/ ? 'editlist' : 'list';
-    
     my $form = $r->as_form;
     
-    return $self->$list( $r ) unless $form->submitted && $form->validate;
+    return $self->list( $r ) unless $form->submitted && $form->validate;
     
-    my $model = $r->model_class;
+    $r->model_class->create_from_form( $form ) || die "Unexpected create error";
     
-    my $obj = $model->create_from_form( $form ) || die "Unexpected create error";
-
-    $r->objects( [ $obj ] );
-    
-    $self->$list( $r );
-}
-
-=item addnew_to_editlist
-
-The C<addnew> form on the editable list page submits to this method, which wraps 
-C<addnew>.
-
-It is pretty tedious to use this method of maintaining the interface either in 
-the C<editlist> or the plain C<list> mode, so expect this to change at some point. Might 
-be easiest to use L<Maypole::Plugin::Session|Maypole::Plugin::Session>. Most other buttons 
-and links return the user to the plain C<list> view at the moment. 
-
-=cut
-
-sub addnew_to_editlist : Exported
-{
-    my ( $self, $r ) = @_;
-
-    $self->addnew( $r );  
+    $self->list( $r );
 }
 
 =item do_edit
@@ -233,13 +206,21 @@ sub do_edit : Exported
 {
     my ( $self, $r ) = @_;
     
-    my $form = $r->as_form( mode => 'edit' ); 
+    my $caller = (caller(1))[3];
+    
+    # the mode of the generated form must match the mode of the submitted from, 
+    # so that the submit button can be detected accurately
+    my $form_mode = $caller =~ 'editlist' ? 'editlist' : 'edit';
+    
+    my $form = $r->as_form( mode => $form_mode ); 
     
     # default template for this action
     $r->template( 'edit' );
     
     # Do nothing if no form submitted, or failed validation. If the latter, 
-    # errors will be displayed by magic in the form.
+    # errors will be displayed by magic in the form. Note that if coming from 
+    # editlist, any form errors will divert us to the edit template (showing errors), 
+    # rather than returning to the editlist template. Which seems like the right behaviour.
     return unless $form->submitted && $form->validate;
     
     # This assumes the primary keys in the form (hidden fields) identify 
@@ -261,7 +242,7 @@ sub do_edit : Exported
     
     $r->objects( [ $obj ] );
     
-    my $return_method = (caller(1))[3] =~ /editlist/ ? 'list' : 'view';
+    my $return_method = $caller =~ /editlist/ ? 'list' : 'view';
     
     $self->$return_method( $r );
 }
@@ -279,7 +260,9 @@ etc.
 sub do_search : Exported 
 {
     my ( $self, $r ) = @_;
-    
+
+    # not sure why this is necessary, the search form submits directly to 
+    # do_search anyway    
     my $form = $r->search_form( mode => 'do_search' );
     
     $r->{template_args}{search} = 1;
@@ -307,24 +290,12 @@ sub editlist : Exported
     
     my $button = $form->submitted if $form->validate;
     
-    warn "GOT BUTTON: $button";
-    
     return $self->do_edit  ( $r )   if $button eq 'update';
     return $self->edit     ( $r )   if $button eq 'edit';
     return $self->do_delete( $r )   if $button eq 'delete';
     return $self->view     ( $r )   if $button eq 'view';
-    return $self->_editlist( $r );
-}
-
-sub _editlist
-{
-    my ( $self, $r ) = @_;
-
-    $r->template( 'editlist' );
     
-    $self = $self->do_pager($r);
-    
-    $r->objects( [ $self->retrieve_all ] );
+    return $self->list     ( $r );
 }
 
 =item list 
@@ -368,6 +339,31 @@ sub do_delete : Exported
     $goner && $goner->delete;
     
     $self->list( $r );
+}
+
+=item switchlistmode
+
+If sessions are enabled, this switches the default list mode between C<editlist> and C<list>.
+
+=cut
+
+sub switchlistmode : Exported
+{
+    my ( $self, $r ) = @_;
+    
+    my %switch_from = ( list => 'editlist',
+                        editlist => 'list',
+                        );
+                   
+    my $old_mode = $r->listviewmode;
+    
+    $r->listviewmode( $switch_from{ $old_mode } );
+    
+    # set this so forms built on the list page don't look for a switchlistmode 
+    # form mode
+    $r->action( 'list' );
+    
+    return $self->list( $r );
 }
 
 # -------------------------------------------------------- other Maypole::Model::CDBI methods -----
@@ -516,6 +512,8 @@ sub fetch_objects {
 David Baird, C<< <cpan@riverside-cms.co.uk> >>
 
 =head1 BUGS
+
+Searching isn't working yet, probably more to do with CDBI::FormBuilder.
 
 Please report any bugs or feature requests to
 C<bug-maypole-formbuilder@rt.cpan.org>, or through the web interface at

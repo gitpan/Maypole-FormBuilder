@@ -32,7 +32,6 @@ Modes supported here are:
 
     list
     addnew
-    addnew_to_editlist
     search
     do_search
     
@@ -58,14 +57,6 @@ sub setup_form_mode
     {
         $args->{action} = $r->make_path( table  => $proto->table, 
                                          action => 'addnew',
-                                         );
-    }
-    
-    # -------------------------
-    elsif ( $mode eq 'addnew_to_editlist' )
-    {
-        $args->{action} = $r->make_path( table  => $proto->table, 
-                                         action => 'addnew_to_editlist',
                                          );
     }
     
@@ -113,13 +104,19 @@ sub view : Exported
 
 =item edit
 
-Just sets the C<edit> template.
+Sets the C<edit> template. 
+
+Also sets the C<action> to C<edit>. This is necessary 
+to support forwarding to the C<edit> template from the C<edit> button on the C<editlist> 
+template.
 
 =cut
 
 sub edit : Exported
 {
     my ( $self, $r ) = @_;
+    
+    $r->action( 'edit' );
     
     $r->template( 'edit' );
 }
