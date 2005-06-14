@@ -59,7 +59,8 @@ Maypole::Plugin::FormBuilder - CGI::FormBuilder for Maypole
     
     # ----- set up validation and other form defaults -----
     
-    BeerFB::Beer->columns( Required => qw( brewery name ) );
+    # has_a fields (style, brewery) are automatically required in CDBI::FormBuilder
+    BeerFB::Beer->columns( Required => qw( name ) ); 
     BeerFB::Beer->form_builder_defaults( { validate => { abv     => 'NUM',
                                                         style   => 'INT',
                                                         brewery => 'INT',
@@ -89,8 +90,8 @@ Maypole::Plugin::FormBuilder - CGI::FormBuilder for Maypole
                                         } );
                                             
     BeerFB::Style->form_builder_defaults( { validate => { name  => 'VALUE',
-                                                        notes => 'VALUE',
-                                                        },
+                                                          notes => 'VALUE',
+                                                          },
                                             required => [ qw( name ) ],
                                             } );    
     
@@ -253,7 +254,7 @@ sub search_form
     die "search_form() must be called on a class, not an object" if ref( $class );
     
     # this must be set before calling _get_form_args()
-    $args{mode} ||= 'search';
+    $args{mode} ||= 'search'; # or do_search - both set the form action to do_search in setup_form_mode()
     
     $args{required} ||= [];
 
@@ -266,7 +267,6 @@ sub search_form
     my $spec = $class->setup_form_mode( $r, \%args );
     
     # remember search terms if the current request is processing a search form
-    #my $sticky = $r->action =~ /^(?:do_)?search$/ ? 1 : 0;
     $spec->{sticky} = $r->action =~ /^(?:do_)?search$/;
     
     return $class->search_form( %$spec );

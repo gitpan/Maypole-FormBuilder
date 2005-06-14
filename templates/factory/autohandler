@@ -29,6 +29,10 @@
 % $m->call_next;
 
 </div>
+
+% use Data::Dumper;
+<pre><% Dumper( scalar( $m->request_args ) ) %></pre>
+
 </body>
 </html>
 

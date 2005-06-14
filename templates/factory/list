@@ -1,6 +1,6 @@
 % my $listview = sprintf '.%sview', $request->listviewmode; # list or editlist
 
-<h2><% eval '$search' ? 'Search results: ' : '' %><% ucfirst( $request->model_class->plural_moniker ) %></h2>
+<h2><% $request->action eq 'do_search' ? 'Search results: ' : '' %><% ucfirst( $request->model_class->plural_moniker ) %></h2>
 
 <& .switch   &>
 <& $listview &>
@@ -47,13 +47,13 @@ if (form._submit.value == "delete") {
 ),
                                     );
 
-    my %names = $objects->[0]->column_names;
+    my %names = $request->model_class->column_names;
                                     
 </%perl>
 <div class="FormListTable">
 <table border="0">
 <tr>
-% foreach my $col ( $objects->[0]->display_columns ) {
+% foreach my $col ( $request->model_class->display_columns ) {
 <th><% $names{ $col } %></th>
 % }
 <th colspan="5">Actions</th>

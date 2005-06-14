@@ -261,11 +261,7 @@ sub do_search : Exported
 {
     my ( $self, $r ) = @_;
 
-    # not sure why this is necessary, the search form submits directly to 
-    # do_search anyway    
-    my $form = $r->search_form( mode => 'do_search' );
-    
-    $r->{template_args}{search} = 1;
+    my $form = $r->search_form;
     
     return $self->list( $r ) unless $form->submitted && $form->validate; 
     

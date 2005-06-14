@@ -1,5 +1,17 @@
 Revision history for Maypole-FormBuilder
 
+0.21   Tues 14 Jun 2005, 11:50
+        - fixed searching by not setting the form mode to do_search in MP::Plugin::FB::do_search()
+            (I don't get why that would break it though)
+        - fixed bugs in list template when a search returns no objects (use 
+            $request->model_class instead of $object->[0]) 
+        - removed template var 'search' from list template - check $request->action eq 
+            'do_search' instead
+        - refactored search template to take advantage of new search_opt_cmp and search_opt_order_by 
+            options in CDBI::FB::search_form()
+        - removed has_a fields from required lists in MP::Plugin::FB synopsis - CDBI::FB now adds them 
+            automatically        
+
 0.2    Sun  12 Jun 2005, 17:20
         - fixed the editlist mode, so all the buttons now work (unsetting sticky 
             forms was the key - otherwise, all the forms adopted the values in 
