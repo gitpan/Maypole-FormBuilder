@@ -1,5 +1,8 @@
 Revision history for Maypole-FormBuilder
 
+0.211  Fri  24 June 2005, 14:30
+        - very minor POD fixes
+
 0.21   Tues 14 Jun 2005, 11:50
         - fixed searching by not setting the form mode to do_search in MP::Plugin::FB::do_search()
             (I don't get why that would break it though)

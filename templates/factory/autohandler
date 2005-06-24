@@ -30,8 +30,8 @@
 
 </div>
 
-% use Data::Dumper;
-<pre><% Dumper( scalar( $m->request_args ) ) %></pre>
+% # use Data::Dumper;
+% # <pre><% Dumper( scalar( $m->request_args ) ) %></pre>
 
 </body>
 </html>

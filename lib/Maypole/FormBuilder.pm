@@ -3,7 +3,7 @@ package Maypole::FormBuilder;
 use warnings;
 use strict;
 
-our $VERSION = 0.21;
+our $VERSION = 0.211;
 
 =head1 NAME
 
@@ -55,15 +55,14 @@ L<Maypole::FormBuilder::Model|Maypole::FormBuilder::Model>.
 =item Maypole::FormBuilder::Model::Base
 
 Model methods that do not depend on the CDBI backend. Models based on a different 
-persistence layer should inherit from this class. 
+persistence layer may wish to inherit from this class. 
 
 L<Maypole::FormBuilder::Model::Base|Maypole::FormBuilder::Model::Base>.
 
 =item templates
 
 A new set of templates for the Beer database. These are considerably simpler than the 
-BeerDB templates. Check out the new C<editlist> template (although bits of it are not quite 
-working yet).
+BeerDB templates. 
 
 These templates are for Mason, but it should be a simple task to port them to other templating 
 systems. 
