@@ -3,7 +3,7 @@ package Maypole::FormBuilder;
 use warnings;
 use strict;
 
-our $VERSION = 0.211;
+our $VERSION = 0.212;
 
 =head1 NAME
 

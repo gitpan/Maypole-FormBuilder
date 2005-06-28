@@ -140,7 +140,7 @@ its C<*_from_form> methods.
 
 =cut
 
-sub display_columns 
+sub display_columns
 { 
     my ( $proto ) = @_;
     
@@ -247,7 +247,7 @@ sub do_edit : Exported
     $self->$return_method( $r );
 }
 
-=item search
+=item do_search
 
 Runs a C<search_where> search. 
 
@@ -360,6 +360,20 @@ sub switchlistmode : Exported
     $r->action( 'list' );
     
     return $self->list( $r );
+}
+
+=item editrelated
+
+Basic support for the C<editrelated> template. This is currently under development 
+in C<Class::DBI::FormBuilder::as_form_with_related()>.
+
+=cut
+
+sub editrelated : Exported
+{
+    my ( $self, $r ) = @_;
+
+
 }
 
 # -------------------------------------------------------- other Maypole::Model::CDBI methods -----
