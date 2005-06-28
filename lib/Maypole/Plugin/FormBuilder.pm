@@ -221,6 +221,8 @@ sub as_form
     
     my $entity = delete( $args{entity} ) || ( @{ $r->objects || [] } )[0] || $r->model_class;
     
+    my $as_form = delete( $args{_as_form_} ) || 'as_form';
+    
     die "Entity $entity is not a Maypole thang" unless $entity->isa( 'Maypole::Model::Base' );
     
     %args = $r->_get_form_args( $entity, %args );
@@ -234,7 +236,19 @@ sub as_form
     # model classes
     my $spec = $entity->setup_form_mode( $r, \%args );
     
-    return $entity->as_form( %$spec );
+    return $entity->$as_form( %$spec );
+}
+
+=item as_form_with_related
+
+
+=cut
+
+sub as_form_with_related
+{
+    my ( $r, %args ) = @_;
+
+    return $r->as_form( _as_form_ => 'as_form_with_related', %args );
 }
 
 

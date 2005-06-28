@@ -1,5 +1,9 @@
 Revision history for Maypole-FormBuilder
 
+0.22   Tues 28 Jun 2005, 14:00
+        - added as_form_with_related() method to MP::P::FB to support the same method 
+            in CDBI::FB
+
 0.212  Tues 28 Jun 2005, 12:30
         - more POD fixes
 

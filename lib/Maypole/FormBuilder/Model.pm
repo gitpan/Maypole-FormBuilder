@@ -117,6 +117,15 @@ EOJS
     }
     
     # -------------------------
+    elsif ( $mode eq 'editrelated' )
+    {
+        $args->{action} = $r->make_path( table      => $proto->table,
+                                         action     => 'do_editrelated',
+                                         %additional, 
+                                         );
+    }
+    
+    # -------------------------
     else
     {
         return $proto->SUPER::setup_form_mode( $r, $args )
