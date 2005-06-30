@@ -3,6 +3,7 @@ Changes
 lib/Maypole/FormBuilder.pm
 lib/Maypole/FormBuilder/Model.pm
 lib/Maypole/FormBuilder/Model/Base.pm
+lib/Maypole/FormBuilder/Model/Plain.pm
 lib/Maypole/FormBuilder/View.pm
 lib/Maypole/Plugin/FormBuilder.pm
 MANIFEST

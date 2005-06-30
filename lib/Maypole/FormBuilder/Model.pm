@@ -10,7 +10,7 @@ use Class::DBI::Loader;
 use Class::DBI::AbstractSearch;
 use Class::DBI::Plugin::RetrieveAll;
 
-use Class::DBI::FormBuilder;
+use Class::DBI::FormBuilder 0.31;
 
 use Maypole::FormBuilder;
 our $VERSION = $Maypole::FormBuilder::VERSION;

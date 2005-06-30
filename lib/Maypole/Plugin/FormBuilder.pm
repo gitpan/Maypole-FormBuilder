@@ -217,11 +217,32 @@ objects. To use a different object or model, pass it in the C<entity> argument:
 
 sub as_form
 {
+    my ( $r, %args_in ) = @_;
+    
+    my ( $entity, %args ) = $r->_form_args( %args_in );
+    
+    return $entity->as_form( %args );
+}
+
+=item as_form_with_related
+
+
+=cut
+
+sub as_form_with_related
+{
+    my ( $r, %args_in ) = @_;
+    
+    my ( $entity, %args ) = $r->_form_args( %args_in );
+
+    return $entity->as_form_with_related( %args );
+}
+
+sub _form_args
+{
     my ( $r, %args ) = @_;
     
     my $entity = delete( $args{entity} ) || ( @{ $r->objects || [] } )[0] || $r->model_class;
-    
-    my $as_form = delete( $args{_as_form_} ) || 'as_form';
     
     die "Entity $entity is not a Maypole thang" unless $entity->isa( 'Maypole::Model::Base' );
     
@@ -236,21 +257,44 @@ sub as_form
     # model classes
     my $spec = $entity->setup_form_mode( $r, \%args );
     
-    return $entity->$as_form( %$spec );
+    return $entity, %$spec;    
 }
 
-=item as_form_with_related
-
-
-=cut
-
-sub as_form_with_related
+sub _get_form_args
 {
-    my ( $r, %args ) = @_;
+    my ( $r, $proto, %args ) = @_;
 
-    return $r->as_form( _as_form_ => 'as_form_with_related', %args );
+    # CDBI::FB will later merge in %{ $proto->form_builder_defaults }, 
+    %args = ( %{ $r->config->form_builder_defaults }, 
+              %args,
+              );
+              
+    $args{mode} ||= $r->action;
+    
+    $args{fields} ||= [ $r->_fields_and_has_many_accessors( $proto ) ]; # [ map {''.$_} $proto->display_columns ]; 
+    #die "Fields: @{ $args{fields} } for $proto";
+
+    # Give every form a (hopefully) unique name.
+    my @name;
+    
+    if ( my $cl = ref( $proto ) )
+    {
+        push @name, $cl, $args{mode}, map { $proto->get( $_ ) } $proto->primary_columns;
+    }
+    else
+    {
+        push @name, $proto, $args{mode};
+    }
+    
+    # Need to use a separator that is legal in javascript function names (not .) and 
+    # CSS identifiers (not _ ?). Need to use a separator in case of multiple primary columns.
+    # CGI::FB will still add an underscore to some identifiers though. 
+    $args{name} ||= join( '_', @name ); 
+                          
+    $args{name} =~ s/[^\w]+/_/g;
+
+    return %args;
 }
-
 
 =item search_form
 
@@ -286,39 +330,23 @@ sub search_form
     return $class->search_form( %$spec );
 }
     
-sub _get_form_args
+# deliberately ugly name to encourage something more generic in future
+# this is similar to the same-named method in CDBI::FB
+sub _fields_and_has_many_accessors
 {
-    my ( $r, $proto, %args ) = @_;
-
-    # CDBI::FB will later merge in %{ $proto->form_builder_defaults }, 
-    %args = ( %{ $r->config->form_builder_defaults }, 
-              %args,
-              );
-              
-    $args{mode} ||= $r->action;
+    my ( $r, $proto ) = @_;
     
-    $args{fields} ||= [ map {''.$_} $proto->display_columns ]; 
-
-    # Give every form a (hopefully) unique name.
-    my @name;
+    my %pc = map { $_ => 1 } $proto->primary_columns;
     
-    if ( my $cl = ref( $proto ) )
-    {
-        push @name, $cl, $args{mode}, map { $proto->get( $_ ) } $proto->primary_columns;
-    }
-    else
-    {
-        push @name, $proto, $args{mode};
-    }
+    my @fields = map {''.$_} $proto->display_columns;
     
-    # Need to use a separator that is legal in javascript function names (not .) and 
-    # CSS identifiers (not _ ?). Need to use a separator in case of multiple primary columns.
-    # CGI::FB will still add an underscore to some identifiers though. 
-    $args{name} ||= join( '_', @name ); 
-                          
-    $args{name} =~ s/[^\w]+/_/g;
-
-    return %args;
+    my %seen = map { $_ => 1 } @fields;
+    
+    my @related = keys %{ $proto->meta_info( 'has_many' ) || {} };
+    
+    push @fields, grep { ! $seen{ $_ } } @related;
+    
+    return @fields;
 }
 
 =item as_forms( %args )
@@ -369,6 +397,8 @@ sub as_forms
 =item render_form_as_row( $form )
 
 Returns a form marked up as a single row for a table. 
+
+This will probably get converted to a template some time. 
 
 =cut
     

@@ -1,5 +1,8 @@
 Revision history for Maypole-FormBuilder
 
+0.23   Thur 30 Jun 2005, 11:00
+        - added Maypole::FormBuilder::Model::Plain
+
 0.22   Tues 28 Jun 2005, 14:00
         - added as_form_with_related() method to MP::P::FB to support the same method 
             in CDBI::FB

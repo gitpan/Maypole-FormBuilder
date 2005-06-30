@@ -7,7 +7,7 @@ WriteMakefile
           'PREREQ_PM' => {
                            'Class::DBI' => '0',
                            'Class::DBI::AbstractSearch' => '0',
-                           'Class::DBI::FormBuilder' => '0',
+                           'Class::DBI::FormBuilder' => '0.32',
                            'Class::DBI::Loader' => '0',
                            'Class::DBI::Pager' => '0',
                            'Class::DBI::Plugin::RetrieveAll' => '0',

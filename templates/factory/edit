@@ -2,8 +2,27 @@
 <h2>Edit a <% $request->model_class->moniker %></h2>
 
 % foreach my $item ( @$objects ) {
+<div id="addnew">
+
 <fieldset>
 <legend>Edit <% $item->get( $item->stringify_column ) %></legend>
 <% $request->as_form( reset => 'reset', submit => 'submit' )->render %>
 </fieldset>
+</div>
+
+<div id="addnew">
+
+<fieldset>
+
+<b>Edit-with-related functionality</b> is in early stages of development. Submitting updates does 
+not work, and some bits and pieces in form rendering are not there yet.
+
+<legend>Edit (with related) <% $item->get( $item->stringify_column ) %></legend>
+<% $request->as_form_with_related( reset        => 'reset', 
+                                   submit       => 'submit',
+                                   #show_related => [ qw( style pubs ) ],
+                                   mode => 'editrelated'
+                                   )->render %>
+</fieldset>
+</div>
 % }
