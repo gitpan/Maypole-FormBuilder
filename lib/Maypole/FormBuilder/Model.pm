@@ -2,7 +2,7 @@ package Maypole::FormBuilder::Model;
 use warnings;
 use strict;
 
-use base qw( Maypole::FormBuilder::Model::Base 
+use base qw( Maypole::Model::Base 
              Class::DBI 
              );
 
@@ -10,14 +10,13 @@ use Class::DBI::Loader;
 use Class::DBI::AbstractSearch;
 use Class::DBI::Plugin::RetrieveAll;
 
-use Class::DBI::FormBuilder 0.31;
+use Class::DBI::FormBuilder 0.34;
 
 use Maypole::FormBuilder;
+
 our $VERSION = $Maypole::FormBuilder::VERSION;
 
-#use Class::DBI::Pager; - now loaded in MP::FB::setup()
-
-#use Data::Dumper;
+#use Class::DBI::Pager; - now loaded in MP::Plugin::FB::setup()
 
 =head1 NAME
 
@@ -43,14 +42,27 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
     
 =item setup_form_mode
 
-See C<Maypole::FormBuilder::Model::Base::setup_form_mode()>.
+Returns a form spec for the selected form mode. The mode defaults to C<< $r->action >>. 
+You can set a different mode in the args hash to the C<as_form> call. Mostly, this method is 
+responsible for setting the C<action> parameter of the form. 
+
+Override this in model classes to configure custom modes, and call 
+
+    $proto->SUPER::setup_form_mode( $r, $args )
+    
+in the custom method if it doesn't know the mode.
 
 Modes supported here are:
 
+    list
+    addnew
+    search
+    do_search
     ${action}_button    where $action is any public action on the class
     editlist
     edit
     do_edit
+    editrelated
     
 =cut
 
@@ -65,8 +77,39 @@ sub setup_form_mode
         
     my %additional = ref( $proto ) ? ( additional => $proto->$pk ) : ();
     
+    # XXX this needs to be refactored into a dispatch table
     # -------------------------
-    if ( $mode =~ /^(\w+)_button$/ )
+    if ( $mode eq 'list' )
+    {
+        $args->{action} = $r->make_path( table      => $proto->table, 
+                                         action     => 'list',
+                                         );
+    }
+    
+    # -------------------------
+    elsif ( $mode eq 'addnew' )
+    {
+        $args->{action} = $r->make_path( table  => $proto->table, 
+                                         action => 'addnew',
+                                         );
+    }
+    
+    # -------------------------
+    # Usually, a search form is specified by setting the mode in a template (e.g. the 
+    # list template). So it's fine to manually set the mode to 'search'. But if you want 
+    # to have a separate search page, don't put it 
+    # at $base/$table/search, because that'll execute the CDBI search method. Put 
+    # it at $base/$table/do_search, or better yet, create your own modes and templates 
+    # for $base/$table/advanced_search, $base/$table/simple_search etc.
+    elsif ( $mode =~ /^(?:do_)?search$/ )
+    {
+        $args->{action} = $r->make_path( table  => $proto->table, # $r->table,
+                                         action => 'do_search',
+                                         );
+    }
+    
+    # -------------------------
+    elsif ( $mode =~ /^(\w+)_button$/ )
     {
         my $button_name = $1;
         
@@ -120,7 +163,7 @@ EOJS
     elsif ( $mode eq 'editrelated' )
     {
         $args->{action} = $r->make_path( table      => $proto->table,
-                                         action     => 'do_editrelated',
+                                         action     => 'editrelated',
                                          %additional, 
                                          );
     }
@@ -128,7 +171,7 @@ EOJS
     # -------------------------
     else
     {
-        return $proto->SUPER::setup_form_mode( $r, $args )
+        die "No form specification found for mode '$mode' on item '$proto'";
     }
     
     delete $args->{mode};
@@ -203,6 +246,25 @@ sub addnew : Exported
     $r->model_class->create_from_form( $form ) || die "Unexpected create error";
     
     $self->list( $r );
+}
+
+=item edit
+
+Sets the C<edit> template. 
+
+Also sets the C<action> to C<edit>. This is necessary 
+to support forwarding to the C<edit> template from the C<edit> button on the C<editlist> 
+template.
+
+=cut
+
+sub edit : Exported
+{
+    my ( $self, $r ) = @_;
+    
+    $r->action( 'edit' );
+    
+    $r->template( 'edit' );
 }
 
 =item do_edit
@@ -346,6 +408,19 @@ sub do_delete : Exported
     $self->list( $r );
 }
 
+=item view
+
+Just sets the C<view> template.
+
+=cut
+
+sub view : Exported
+{
+    my ( $self, $r ) = @_;
+
+    $r->template( 'view' );
+}
+
 =item switchlistmode
 
 If sessions are enabled, this switches the default list mode between C<editlist> and C<list>.
@@ -382,8 +457,22 @@ sub editrelated : Exported
 {
     my ( $self, $r ) = @_;
 
-
+    my $form = $r->as_form_with_related( debug => 2 );
+    
+    warn "START";
+    
+    return $self->edit( $r ) unless $form->submitted && $form->validate;
+    
+    warn "GOT FORM";
+    
+    $r->objects( [ $self->update_from_form_with_related( $form ) ] );
+    
+    warn "DONE UPDATING: $self $r @{ $r->{objects} }";
+    
+    $self->view( $r );
 }
+
+
 
 # -------------------------------------------------------- other Maypole::Model::CDBI methods -----
 
@@ -530,9 +619,15 @@ sub fetch_objects {
 
 David Baird, C<< <cpan@riverside-cms.co.uk> >>
 
-=head1 BUGS
+=head1 TODO
 
-Searching isn't working yet, probably more to do with CDBI::FormBuilder.
+Refactor setup_form_mode() into a dispatch table.
+
+Pairs of methods like search and do_search, edit and do_edit are probably 
+unnecessary, as FB makes it easy to distinguish between rendering a form 
+and processing a form - see editrelated().
+
+=head1 BUGS
 
 Please report any bugs or feature requests to
 C<bug-maypole-formbuilder@rt.cpan.org>, or through the web interface at
