@@ -40,7 +40,11 @@ Maypole::FormBuilder::Model::Plain - Class::DBI model without ::Loader
     use Foo::Other::Table;
 
     Foo->config->model( 'Maypole::FormBuilder::Model::Plain' );
+    
     Foo->setup( [ qw/ Foo::SomeTable Foo::Other::Table / ] );
+    
+    # Foo now inherits from Class::DBI::FormBuilder via the model
+    Foo->form_builder_defaults( { method => 'post' } );
 
 =head1 DESCRIPTION
 

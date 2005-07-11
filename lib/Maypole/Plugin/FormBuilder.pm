@@ -40,7 +40,7 @@ Maypole::Plugin::FormBuilder - CGI::FormBuilder for Maypole
     #BeerFB->config->pager_class( 'Class::DBI::Plugin::Pager' );
     
     # global FormBuilder defaults
-    BeerFB->config->form_builder_defaults( method => 'post' );
+    BeerFB->config->form_builder_defaults( { method => 'post' } );
     
     # standard config
     BeerFB->config->{template_root}  = '/home/beerfb/www/www/htdocs';
@@ -244,7 +244,8 @@ sub _form_args
     
     my $entity = delete( $args{entity} ) || ( @{ $r->objects || [] } )[0] || $r->model_class;
     
-    die "Entity $entity is not a Maypole thang" unless $entity->isa( 'Maypole::Model::Base' );
+    die "Entity $entity does not inherit from Maypole::Model::Base" 
+        unless $entity->isa( 'Maypole::Model::Base' );
     
     %args = $r->_get_form_args( $entity, %args );
     
@@ -271,8 +272,9 @@ sub _get_form_args
               
     $args{mode} ||= $r->action;
     
-    $args{fields} ||= [ $r->_fields_and_has_many_accessors( $proto ) ]; # [ map {''.$_} $proto->display_columns ]; 
-    #die "Fields: @{ $args{fields} } for $proto";
+    # NO! this is an as_form, so it should not have related fields.
+    # And anyway, we can leave this to CDBI::FB to figure out a default.
+    #$args{fields} ||= [ $r->_columns_and_has_many_accessors( $proto ) ]; 
 
     # Give every form a (hopefully) unique name.
     my @name;
@@ -332,7 +334,7 @@ sub search_form
     
 # deliberately ugly name to encourage something more generic in future
 # this is similar to the same-named method in CDBI::FB
-sub _fields_and_has_many_accessors
+sub _columns_and_has_many_accessors
 {
     my ( $r, $proto ) = @_;
     

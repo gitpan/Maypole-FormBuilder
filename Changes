@@ -1,5 +1,8 @@
 Revision history for Maypole-FormBuilder
 
+0.241  Mon  11 Jul 2005, 21:45
+        - a couple of minor updates to docs
+
 0.24   Fri   1 Jul 2005, 16:30
         - got rid of MP::FB::Model::Base
 
