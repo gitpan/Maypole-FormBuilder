@@ -590,7 +590,7 @@ sub setup_database {
             dsn       => $dsn,
             user      => $u,
             password  => $p,
-            options   => $opts,
+            %$opts,
         )
     );
     $config->{classes} = [ $config->{loader}->classes ];
