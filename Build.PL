@@ -15,6 +15,7 @@ my $builder = Module::Build->new(
         'Class::DBI::Plugin::RetrieveAll' => 0,
         'Class::DBI::FormBuilder' => 0.35,
         'Class::DBI::Pager' => 0,
+        'Class::DBI::Plugin::Type' => 0,
         'Maypole::Model::Base' => 0,
         'NEXT' => 0,
         'UNIVERSAL::require' => 0,

@@ -8,6 +8,7 @@ to the L<Data::Page> interface.
 
 </%doc>
 
+% our $pager;
 % return unless $pager and ( $pager->first_page != $pager->last_page );
 
 <p class="pager">Pages:

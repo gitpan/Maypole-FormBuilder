@@ -1,5 +1,8 @@
 Revision history for Maypole-FormBuilder
 
+0.243  Sat 16 July 2005, 22:45
+        - load use Class::DBI::Plugin::Type in MP::FB::Model
+
 0.242  Mon 11  Jul 2005, 21:55
         - fixed bug in MP::FB::Model::setup_database() - 
 
