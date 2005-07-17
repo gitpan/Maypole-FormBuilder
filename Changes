@@ -1,5 +1,8 @@
 Revision history for Maypole-FormBuilder
 
+0.2431 Sun 17 July 2005, 12:10
+        - require CDBI::FB 0.3452 (not 0.35, which doesn't exist) in Build.PL
+
 0.243  Sat 16 July 2005, 22:45
         - load use Class::DBI::Plugin::Type in MP::FB::Model
 
