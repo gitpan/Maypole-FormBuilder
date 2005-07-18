@@ -4,8 +4,7 @@
 <head>
     <title><% $config->{application_name} || "A Maypole application" %></title>
     <meta http-equiv="Content-Type" content="text/html; charset=<% $request->document_encoding %>"/>
-    <link href="<% $base %>/css/maypole.css" type="text/css" rel="stylesheet" />
-    <link href="<% $base %>/css/beer.css" type="text/css" rel="stylesheet" />
+    <link href="<% $base %>/maypole.css" type="text/css" rel="stylesheet" />
 </head>
 <body>
 <div class="content">
