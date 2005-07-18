@@ -11,10 +11,9 @@ README
 t/00-load.t
 t/pod-coverage.t
 t/pod.t
-templates/beer/css/beer.css
 templates/factory/addnew
 templates/factory/autohandler
-templates/factory/css/maypole.css
+templates/factory/maypole.css
 templates/factory/dhandler
 templates/factory/edit
 templates/factory/frontpage

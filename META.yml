@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: Maypole-FormBuilder
-version: 0.2431
+version: 0.2432
 author:
   - David Baird <cpan@riverside-cms.co.uk>
 abstract: CGI::FormBuilder support in Maypole
@@ -8,7 +8,7 @@ license: perl
 requires:
   Class::DBI: 0
   Class::DBI::AbstractSearch: 0
-  Class::DBI::FormBuilder: 0.3452
+  Class::DBI::FormBuilder: 0.3501
   Class::DBI::Loader: 0
   Class::DBI::Pager: 0
   Class::DBI::Plugin::RetrieveAll: 0
@@ -21,7 +21,7 @@ requires:
 provides:
   Maypole::FormBuilder:
     file: lib/Maypole/FormBuilder.pm
-    version: 0.2431
+    version: 0.2432
   Maypole::FormBuilder::Model:
     file: lib/Maypole/FormBuilder/Model.pm
   Maypole::FormBuilder::Model::Plain:

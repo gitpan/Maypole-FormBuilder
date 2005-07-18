@@ -1,5 +1,10 @@
 Revision history for Maypole-FormBuilder
 
+0.2432 Mon 18 July 2005, 12:55
+        - removed empty beer templates directory
+        - moved maypole.css to factory/ subdir, and removed css/ subdir
+        - upgraded CDBI::FB requirement to 0.3501 in Build.PL
+
 0.2431 Sun 17 July 2005, 12:10
         - require CDBI::FB 0.3452 (not 0.35, which doesn't exist) in Build.PL
 
