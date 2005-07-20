@@ -21,5 +21,4 @@ templates/factory/list
 templates/factory/pager
 templates/factory/search
 templates/factory/view
-templates/factory/view_related
 Makefile.PL

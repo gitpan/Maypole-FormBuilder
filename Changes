@@ -1,5 +1,24 @@
 Revision history for Maypole-FormBuilder
 
+0.25   Wed 20 July 2005, 00:45
+        - Maypole::Plugin::FormBuilder
+            - removed some dead code incl. as_form_with_related
+        
+        - Maypole::FormBuilder::Model
+            - load Class::DBI::Plugin::Type, rather than expecting the caller to do so
+            
+        - templates
+            - removed view_related - MP::P::QuickTable is smart enough to figure out 
+                has_many items in the view template
+            - adjusted column naming in list template to include has_many fields - 
+                see MP::P::QuickTable for other changes to make listview and editlistview 
+                show the same data - see http://rt.cpan.org/Ticket/Display.html?id=13779
+            - added some notes in source of pager template, sent by Ron McClain, to get the 
+                pager to work for search results. There's still a couple of things broken at the 
+                moment though - see also http://rt.cpan.org/Ticket/Display.html?id=13781    
+                
+        - added Maypole::Plugin::QuickTable as a prereq
+
 0.2433 Mon 18 July 2005, 21:00
         - fixed maypole.css link in autohandler template 
 

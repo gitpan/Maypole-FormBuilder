@@ -46,6 +46,15 @@ to the L<Data::Page> interface.
 #                    $action = "search";
 #                }
 #            }
+
+# Ron McClain - uncomment the above, and add the below, to page search results
+# if($action =~ /search/) {
+#                my $mybutton = $request->model_class;
+#                $mybutton =~ s/::/_/g;
+#                $mybutton = "_submitted_" . $mybutton . "_search=1";
+#                $args .= "\&$mybutton";
+#            }
+            
 </%perl>
 <% $request->link( table      => $request->model_class->table,
                    action     => 'list',

@@ -25,6 +25,7 @@
     
     push @{ $data[0] }, 'Actions';
 </%perl>
+% # quick_table will populate the table with display_columns by default
 <div class="NavListTable"><% $request->quick_table( labels => 'T' )->render( @data ) %></div>
 </%def>
 
@@ -53,8 +54,9 @@ if (form._submit.value == "delete") {
 <div class="FormListTable">
 <table border="0">
 <tr>
-% foreach my $col ( $request->model_class->display_columns ) {
-<th><% $names{ $col } %></th>
+% # foreach my $col ( $request->model_class->display_columns ) { # this misses has_many and might_have fields
+% foreach my $field ( grep { $_->type ne 'hidden' } $forms[0]->fields ) {
+<th><% $names{ $field } || ucfirst( $field ) %></th>
 % }
 <th colspan="5">Actions</th>
 </tr>

@@ -224,20 +224,6 @@ sub as_form
     return $entity->as_form( %args );
 }
 
-=item as_form_with_related
-
-
-=cut
-
-sub as_form_with_related
-{
-    my ( $r, %args_in ) = @_;
-    
-    my ( $entity, %args ) = $r->_form_args( %args_in );
-
-    return $entity->as_form_with_related( %args );
-}
-
 sub _form_args
 {
     my ( $r, %args ) = @_;
@@ -290,7 +276,7 @@ sub _get_form_args
     
     # Need to use a separator that is legal in javascript function names (not .) and 
     # CSS identifiers (not _ ?). Need to use a separator in case of multiple primary columns.
-    # CGI::FB will still add an underscore to some identifiers though. 
+    # CGI::FB will still add an underscore to some identifiers though, so we'll use '_'. 
     $args{name} ||= join( '_', @name ); 
                           
     $args{name} =~ s/[^\w]+/_/g;
@@ -332,25 +318,6 @@ sub search_form
     return $class->search_form( %$spec );
 }
     
-# deliberately ugly name to encourage something more generic in future
-# this is similar to the same-named method in CDBI::FB
-sub _columns_and_has_many_accessors
-{
-    my ( $r, $proto ) = @_;
-    
-    my %pc = map { $_ => 1 } $proto->primary_columns;
-    
-    my @fields = map {''.$_} $proto->display_columns;
-    
-    my %seen = map { $_ => 1 } @fields;
-    
-    my @related = keys %{ $proto->meta_info( 'has_many' ) || {} };
-    
-    push @fields, grep { ! $seen{ $_ } } @related;
-    
-    return @fields;
-}
-
 =item as_forms( %args )
 
     %args = ( objects       => $object|$arrayref_of_objects,    defaults to $r->objects
@@ -361,7 +328,8 @@ sub _columns_and_has_many_accessors
 Generates multiple forms and returns them as a list.
 
 You will probably want to set C<no_textareas> to true (converts them to text inputs), and perhaps 
-reduce C<selectnum> ( see the C<list> template in this distribution).
+reduce C<selectnum> to generate popup menus rather than multiple radiobuttons or checkboxes 
+( see the C<list> template in this distribution).
 
 =cut
 
@@ -401,6 +369,8 @@ sub as_forms
 Returns a form marked up as a single row for a table. 
 
 This will probably get converted to a template some time. 
+
+Yes, it's bad XHTML - suggestions about how to do this legally would be good.
 
 =cut
     

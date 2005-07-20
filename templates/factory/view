@@ -16,8 +16,6 @@
                       label   => 'Back to listing',
                       ) %></p>
 
-<& view_related, object => $item &>
-
 <% $request->as_form( mode => 'edit_button',   entity => $item )->render %>
 <% $request->as_form( mode => 'delete_button', entity => $item )->render %>
 

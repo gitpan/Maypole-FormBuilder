@@ -7,13 +7,14 @@ WriteMakefile
           'PREREQ_PM' => {
                            'Class::DBI' => '0',
                            'Class::DBI::AbstractSearch' => '0',
-                           'Class::DBI::FormBuilder' => '0.3501',
+                           'Class::DBI::FormBuilder' => '0.351',
                            'Class::DBI::Loader' => '0',
                            'Class::DBI::Pager' => '0',
                            'Class::DBI::Plugin::RetrieveAll' => '0',
                            'Class::DBI::Plugin::Type' => '0',
                            'Maypole::Config' => '0',
                            'Maypole::Model::Base' => '0',
+                           'Maypole::Plugin::QuickTable' => '0.2',
                            'NEXT' => '0',
                            'Test::More' => '0',
                            'UNIVERSAL::require' => '0'
