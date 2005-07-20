@@ -3,8 +3,8 @@
 <h2><% $request->action eq 'do_search' ? 'Search results: ' : '' %><% ucfirst( $request->model_class->plural_moniker ) %></h2>
 
 <& .switch   &>
-<& $listview &>
 <& pager     &>
+<& $listview &>
 <& addnew    &>
 <& search    &>
     

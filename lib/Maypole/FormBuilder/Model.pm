@@ -378,18 +378,19 @@ sub list : Exported
 
     $r->template( 'list' );
     
-    #my $order = $self->order($r);
+    # something like "my_col DESC" or just "my_col" (for ASC)
+    my $order = $self->order( $r );
     
-    $self = $self->do_pager($r);
+    $self = $self->do_pager( $r );
     
-    #if ($order) 
-    #{
-    #    $r->objects( [ $self->retrieve_all_sorted_by($order) ] );
-    #}
-    #else 
-    #{
+    if ( $order ) 
+    {
+        $r->objects( [ $self->retrieve_all_sorted_by( $order ) ] );
+    }
+    else 
+    {
         $r->objects( [ $self->retrieve_all ] );
-    #}    
+    }    
 }
 
 =item do_delete

@@ -8,60 +8,51 @@ to the L<Data::Page> interface.
 
 </%doc>
 
-% our $pager;
-% return unless $pager and ( $pager->first_page != $pager->last_page );
-
 <p class="pager">Pages:
+% foreach my $page ( $begin_page .. $end_page ) {
+% if ( $page == $pager->current_page ) {
+<span class="current-page"><% $page %></span>
+% } else {
+<& .page_link, page => $page &>
+% }
+% }
+</p>
 
-<%perl>
+% # --------------------------------------------------------------------------
+<%init>
+    our $pager;
+    return unless $pager; #  and ( $pager->first_page != $pager->last_page );
+
     my $begin_page = $pager->current_page - 10;
     $begin_page = $pager->first_page if $begin_page < 1;
 
     my $end_page = $pager->current_page + 10;
     $end_page = $pager->last_page if $pager->last_page < $end_page;
+</%init>
 
-    foreach my $num ( $begin_page .. $end_page )
-    {
-        if ( $num == $pager->current_page )
-        {
-</%perl>
-<span class="current-page"><% $num %></span>
-<%perl>
-        }
-        else
-        {
-            my $args = "?page=$num";
-
-            $args .= "&order=" . $request->params->{order} if $request->params->{order};
-
-            $args .= "&o2=desc" if $request->params->{o2} eq "desc";
-
-            #my $action = "list";
-
-#            foreach my $col ( $request->model_class->display_columns )
-#            {
-#                if ( $request->params->{ $col } )
-#                {
-#                    $args .= "&$col=" . $request->params->{ $col };
-#                    $action = "search";
-#                }
-#            }
-
-# Ron McClain - uncomment the above, and add the below, to page search results
-# if($action =~ /search/) {
-#                my $mybutton = $request->model_class;
-#                $mybutton =~ s/::/_/g;
-#                $mybutton = "_submitted_" . $mybutton . "_search=1";
-#                $args .= "\&$mybutton";
-#            }
-            
-</%perl>
+% # --------------------------------------------------------------------------
+<%def .page_link>
+<%args>
+    $page
+</%args>            
 <% $request->link( table      => $request->model_class->table,
-                   action     => 'list',
+                   action     => $request->action,
                    additional => $args,
-                   label      => $num,
+                   label      => $page,
                    ) %>
-% }
-% }
-</p>
-
+<%init>    
+    my $args = "?page=$page";
+    
+    my %params = %{ $request->params };
+    
+    delete $params{page};
+    
+    %params = () if ( $request->action ne 'list' && $request->action ne 'do_search' );
+    
+    my $uri = URI->new;
+    
+    $uri->query_form( %params );
+    
+    $args .= "&".$uri->equery if $uri->equery;
+</%init>
+</%def>

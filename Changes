@@ -1,5 +1,16 @@
 Revision history for Maypole-FormBuilder
 
+0.26   Wed 20 July 2005, 12:00
+        - templates
+            - pager: re-organised layout of code, and added code from Ron McClain to correctly 
+                page search results
+            - list: moved the pager to above the table of results, and now show page number
+                even for a single page of results
+        
+        - Maypole::FormBuilder::Model        
+            - uncommented code in list() to return sorted results, now that the framework is in 
+                place to provide the required parameters        
+
 0.25   Wed 20 July 2005, 00:45
         - Maypole::Plugin::FormBuilder
             - removed some dead code incl. as_form_with_related
