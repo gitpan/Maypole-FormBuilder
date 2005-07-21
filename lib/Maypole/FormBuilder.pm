@@ -3,10 +3,10 @@ package Maypole::FormBuilder;
 use warnings;
 use strict;
 
-our $VERSION = 0.26;
+our $VERSION = 0.27;
 
-# $Rev: 248 $
-# $Date: 2005-07-20 13:04:44 +0100 (Wed, 20 Jul 2005) $
+# $Rev: 292 $
+# $Date: 2005-07-21 20:13:41 +0100 (Thu, 21 Jul 2005) $
 
 =head1 NAME
 
@@ -67,10 +67,16 @@ L<Maypole::FormBuilder::Model::Base|Maypole::FormBuilder::Model::Base>.
 A new set of templates for the Beer database. These are considerably simpler than the 
 BeerDB templates. 
 
-These templates are for Mason, but it should be a simple task to port them to other templating 
-systems. 
+    templates-mason     Mason templates
+    templates-tt        TT templates, donated by Ron McClain
 
 Note that the templates also need L<Maypole::Plugin::QuickTable|Maypole::Plugin::QuickTable>.
+
+Also note, TT users must bless an object called C<mclass> into
+C<< $request->model_class >> and add it to the template vars in C<additional_data()>.
+This is to make C<moniker> work, which will always return C<Proxy> if if you
+do C<[% mclass = Class(request.model_class) %]> because C<Class> creates a
+Proxy object around the model class.
     
 =back
 

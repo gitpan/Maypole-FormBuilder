@@ -1,0 +1,33 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>[% config.application_name || "A Maypole application" %]</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=[% request.document_encoding %]"/>
+    <link href="[% base %]/maypole.css" type="text/css" rel="stylesheet" />
+</head>
+<body>
+<div class="content">
+
+<h2><a href="[% base %]/">[% config.application_name || "A Maypole application" %]</a></h2>
+[% IF request.user %]<table width="100%"><td align=left> Logged in as: [% request.user.name %] </td><td align=right><a href="[%base%]/users/logout">logout</a></td></table>[% END %]
+<div id="navcontainer">
+<ul id="navlist">
+
+[% IF request.model_class %] 
+[% USE model_class = Class(request.model_class) %]
+[% END %]
+
+[% FOREACH table IN config.display_tables %]
+<li[% (request.model_class && model_class.table == table  ? ' id="active"' :'') %]>\
+[% request.link( 'table', table,
+                   'action', 'list',
+                   'additional' , '',
+                   'label' , table,
+                   ) %]\
+</li>
+[% END %]
+
+</ul>
+</div>
+

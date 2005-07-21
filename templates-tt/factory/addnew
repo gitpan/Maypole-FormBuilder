@@ -1,0 +1,13 @@
+<div id="addnew">
+<fieldset>
+[% USE model_class = Class(request.model_class) %]
+<legend>Add a new [% mclass.moniker%]</legend>
+[% request.as_form( 
+	'mode', 'addnew',
+	'entity' , request.model_class,
+	'sticky' , 0,
+	'reset' , 'reset',
+	'submit' , 'submit'
+).render %]
+</fieldset>
+</div>

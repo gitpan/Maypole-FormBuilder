@@ -1,0 +1,81 @@
+[% INCLUDE header %]
+[% USE model_class = Class(request.model_class) %]
+[% listview = request.listviewmode | format("%sview") %] 
+[% IF request.action == 'do_search' %]
+<h2> Search results:  [% mclass.moniker_plural | ucfirst %]</h2>
+[%END%]
+<p class="subheading">
+[% other = request.listviewmode == 'editlist' ? 'navigable' : 'editable' %]
+[% request.link("table", model_class.table,
+	"action",  "switchlistmode",
+	"label",  "Switch to $other list view"
+) 
+%]
+
+</p>
+[% INCLUDE $listview %]
+[% INCLUDE pager %]
+[% INCLUDE addnew %]
+[% INCLUDE search %]
+
+[% BLOCK listview %]
+[% PERL %]
+	 my $request = $stash->get('request');
+	 my $objects = $stash->get('objects');
+    my $callback = sub 
+    {
+        my ( $object ) = @_;
+        my $buttons;
+	$buttons .= $request->as_form( mode => 'edit_button',   entity => $object)->render;
+	$buttons .= $request->as_form( mode => 'delete_button', entity => $object )->render;
+	$buttons .= $request->as_form( mode => 'view_button', entity => $object )->render;
+	return $buttons;
+    };
+    my @data = $request->tabulate( $objects, with_colnames => 1, callback => $callback );
+    
+    my $i = 0;
+    
+    push @{ $data[0] }, 'Actions';
+    $stash->set('data', \@data);
+[% END %]
+<div class="NavListTable">[% request.quick_table( "labels", 'T' ).render( data ) %]</div>
+[% END %]
+
+[% BLOCK editlistview %]
+[% PERL %]
+    # Note: turn off stickiness. Otherwise, all the forms will display the values submitted 
+    # in the previous action, e.g. addnew.
+    my $request = $stash->get('request');
+    my @forms = $request->as_forms( submit          => [ qw( view update edit delete ) ],
+                                    reset           => 'reset',
+                                    selectnum       => 2,
+                                    mode            => 'editlist',
+                                    no_textareas    => 1,
+                                    sticky          => 0, 
+                                    jsfunc          => qq(
+					if (form._submit.value == "delete") {
+					    if (confirm("Really DELETE this entry?")) return true;
+					    return false;
+					}
+				    )
+     );
+     my %names = $request->model_class->column_names;
+     $stash->set('names', \%names);
+     $stash->set('forms', \@forms);
+[% END %]
+<div class="FormListTable">
+<table border="0">
+<tr>
+[% FOREACH col IN model_class.display_columns %] 
+	<th>[% names.$col %]</th>
+[% END %]
+
+<th colspan="5">Actions</th>
+</tr>
+[% FOREACH form IN forms %]
+[% request.render_form_as_row( form ) %]
+[% END %]
+</table>
+</div>
+[% END %]
+[% INCLUDE footer %]

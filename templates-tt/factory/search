@@ -1,0 +1,41 @@
+
+[% PERL %]
+    # see http://dev.mysql.com/doc/mysql/en/pattern-matching.html for a useful summary of using the 
+    # different operators in MySQL
+    my $request = $stash->get('request');
+    my $cmp = [ ( '=', '!=', '<', '<=', '>', '>=', 
+                  'LIKE', 'NOT LIKE', 
+                  'REGEXP', 'NOT REGEXP', 
+                  'REGEXP BINARY', 'NOT REGEXP BINARY', 
+                  ) ];
+                  
+    my $form = $request->search_form( reset  => 'reset', 
+                                      submit => 'search',
+                                      
+                                      search_opt_order_by => 1,
+                                      # or just offer a few:
+                                      # search_opt_order_by => [ 'foo', 'foo DESC', 'bar' ],
+                                      
+                                      search_opt_cmp      => $cmp,
+                                      # or set the cmp operator transparently via a hidden field
+                                      # search_opt_cmp => 'LIKE',
+                                      );
+                                     
+    $form->field( name  => 'search_opt_cmp',
+                  label => 'Search operator',
+                  size  => @$cmp + 1,
+                  );
+    
+    $form->field( name => 'search_opt_order_by',
+                  label => 'Order by',
+                  );                  
+    $stash->set('form', $form);
+[% END %]
+
+<div id="search">
+<fieldset>
+[% USE model_class = Class(request.model_class) %]
+<legend>Search for [% mclass.plural_moniker %]</legend>
+[% form.render %]
+</fieldset>
+</div>

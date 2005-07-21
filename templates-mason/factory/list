@@ -55,7 +55,8 @@ if (form._submit.value == "delete") {
 <table border="0">
 <tr>
 % # foreach my $col ( $request->model_class->display_columns ) { # this misses has_many and might_have fields
-% foreach my $field ( grep { $_->type ne 'hidden' } $forms[0]->fields ) {
+% my $dummy_form = $forms[0] || $request->model_class->as_form( mode => 'editlist' );
+% foreach my $field ( grep { $_->type ne 'hidden' } $dummy_form->fields ) {
 <th><% $names{ $field } || ucfirst( $field ) %></th>
 % }
 <th colspan="5">Actions</th>

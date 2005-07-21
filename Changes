@@ -1,5 +1,11 @@
 Revision history for Maypole-FormBuilder
 
+0.27    Thur 21 July 2005, 19:45
+        - templates
+            - list - build a dummy form if no forms are available in editlistview
+            - moved Mason templates to templates-mason/
+            - added TT templates (in templates-tt/) from Ron McClain
+
 0.26   Wed 20 July 2005, 12:00
         - templates
             - pager: re-organised layout of code, and added code from Ron McClain to correctly 
