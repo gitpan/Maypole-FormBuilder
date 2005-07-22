@@ -60,7 +60,6 @@ Maypole::Plugin::FormBuilder - CGI::FormBuilder for Maypole
     # ----- set up validation and other form defaults -----
     
     # has_a fields (style, brewery) are automatically required in CDBI::FormBuilder
-    BeerFB::Beer->columns( Required => qw( name ) ); 
     BeerFB::Beer->form_builder_defaults( { validate => { abv     => 'NUM',
                                                         style   => 'INT',
                                                         brewery => 'INT',
@@ -72,16 +71,16 @@ Maypole::Plugin::FormBuilder - CGI::FormBuilder for Maypole
                                                         },
                                         options => { score => [ qw( 1 2 3 4 5 ) ],
                                                         },
+                                        required => [ qw( name ) ],
                                         } );
         
-    BeerFB::Brewery->columns( Required => qw( name ) );
     BeerFB::Brewery->form_builder_defaults( { validate => { name  => 'VALUE',
                                                             notes => 'VALUE',
                                                             url   => 'VALUE',
                                                             },
+                                               required => [ qw( name ) ],
                                             } );
                                             
-    # or put the required columns in the CGI::FormBuilder default spec:
     BeerFB::Pub->form_builder_defaults( { validate => { name  => 'VALUE',
                                                         notes => 'VALUE',
                                                         url   => 'VALUE',

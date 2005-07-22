@@ -43,6 +43,9 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
     
 =item setup_form_mode
 
+This method is responsible for ensuring that the 'server' form and the 'client' form are 
+equivalent - see I<Coordinating client and server forms>.
+
 Returns a form spec for the selected form mode. The mode defaults to C<< $r->action >>. 
 You can set a different mode in the args hash to the C<as_form> call. Mostly, this method is 
 responsible for setting the C<action> parameter of the form. 
@@ -64,6 +67,7 @@ Modes supported here are:
     edit
     do_edit
     editrelated
+    addto
     
 =cut
 
@@ -157,9 +161,33 @@ EOJS
     elsif ( $mode =~ /^(?:do_)?edit$/ )
     {
         $args->{action} = $r->make_path( table      => $proto->table,
-                                           action     => 'do_edit',
-                                           %additional, 
-                                           );
+                                         action     => 'do_edit',
+                                         %additional, 
+                                         );
+                                           
+        $args->{reset}  = 'reset';
+        $args->{submit} = 'submit';
+        $args->{fields} = [ $proto->display_columns ], # $proto->related ];
+    }
+    
+    # -------------------------
+    elsif ( $mode eq 'addto' )
+    {
+        $args->{action} = $r->make_path( table      => $proto->table,
+                                         action     => 'addto',
+                                         );
+        
+        # the template will already set this to +SET_VALUE(Some::Class) for the 
+        # client, but we must ensure the field exists on the server form
+        if ( my $p = $args->{process_fields}->{__target_class__} )
+        {   # client form
+            $p = [ $p, '+HIDDEN' ];
+            $args->{process_fields}->{__target_class__} = $p;
+        }
+        else
+        {   # server form
+            $args->{process_fields}->{__target_class__} = '+ADD_FIELD'; 
+        }
     }
     
     # -------------------------
@@ -183,11 +211,19 @@ EOJS
 }
 
 
-# --------------------------------------------------------- utility -----
+# ---------------------------------------------------------------------------------- utility -----
+
+=back
+
+=head2 Column and field lists
+
+=over
+
 =item display_columns
 
 Returns a list of columns, minus primary key columns, which probably don't 
-need to be displayed. 
+need to be displayed. The templates use this as the default list of columns 
+to display. 
 
 Note that L<Class::DBI::FormBuilder|Class::DBI::FormBuilder> will add back in 
 B<hidden> fields for the primary key(s), to support lookups done in several of 
@@ -207,16 +243,22 @@ sub display_columns
 =item list_columns
 
 This method is not defined here, but in L<Maypole::Model::Base|Maypole::Model::Base>, and 
-defaults to return C<display_columns>. 
+defaults to C<display_columns>. This is used to define the columns displayed in the C<list> 
+template. 
+
+=item related
+
+Returns a list of accessors for C<has_many> related classes. These can appear as fields in a 
+form, but are not columns in the database. 
 
 =item list_fields
 
-This method is new in L<Maypole::FormBuilder|Maypole::FormBuilder>. Defaults to C<related>, 
-which returns the names of C<has_many> accessors. 
+This method is new in L<Maypole::FormBuilder|Maypole::FormBuilder>. Defaults to C<related>. 
 
-The C<list> template uses 
-C<list_fields> as the default list of fields to display, and C<setup_form_mode> sets this list in 
-the C<fields> argument in C<editlist> mode.
+The C<list> template uses C<list_columns> plus C<list_fields> as the default list of fields to 
+display, and C<setup_form_mode> sets C<list_columns> plus C<list_fields> in the C<fields> 
+argument in C<editlist> mode, so that editable and navigable list views both present the same 
+fields. 
 
 =cut
 
@@ -233,12 +275,16 @@ sub list_fields
 
 =head2 Exported methods
 
-As a convenience, all these methods now set the appropriate template, so it shouldn't 
-be necessary to set the template and then call the method. This is particularly useful in 
+Exported methods have the C<Exported> attribute set. These are the methods that URLs can trigger. 
+See the main Maypole documentation for more information. 
+
+As a convenience and a useful convention, all these methods now set the appropriate template, 
+so it shouldn't be necessary to set the template and then call the method. This is particularly useful in 
 despatching methods, such as C<editlist>.
 
 Some exported methods are defined in L<Maypole::FormBuilder::Model::Base|Maypole::FormBuilder::Model::Base>, 
-if they have no dependency on CDBI.
+if they have no dependency on CDBI. But the likelihood of a FormBuilder distribution that doesn't depend 
+on L<Class::DBI::FormBuilder|Class::DBI::FormBuilder> is pretty low.
 
 =head3 Gotchas
 
@@ -272,6 +318,19 @@ sub addnew : Exported
     $r->model_class->create_from_form( $form ) || die "Unexpected create error";
     
     $self->list( $r );
+}
+
+=item addto
+
+=cut
+
+sub addto : Exported
+{
+    my ( $self, $r ) = @_;
+    
+    my $form = $r->as_form;
+    
+    return $self->list( $r ) if $r->model_class->create_from_form( $form );
 }
 
 =item edit
@@ -664,6 +723,9 @@ David Baird, C<< <cpan@riverside-cms.co.uk> >>
 =head1 TODO
 
 Refactor setup_form_mode() into a dispatch table.
+
+I think splitting modes into search and do_search, and edit and do_edit, is 
+probably unnecessary.
 
 Pairs of methods like search and do_search, edit and do_edit are probably 
 unnecessary, as FB makes it easy to distinguish between rendering a form 

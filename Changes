@@ -1,5 +1,24 @@
 Revision history for Maypole-FormBuilder
 
+0.3     Fri 22 July 2005, 23:00    
+        - templates 
+            - split the autohandler into header, navbar, title and footer templates
+            - added greying-out for ReadOnly and Disabled input classes
+            - added edit_with_related template - override this with an empty edit_with_related to 
+                remove the edit_with_related form in the edit template
+            - edit template 
+                - related fields are no longer rendered in the default edit form. 
+                    Instead, they are displayed in a table following the form, 
+                    with the new addto template
+            - addto - a new template, used in the edit template, to add a has_many item 
+                
+                
+        - Maypole::FormBuilder::Model
+            - removed related() from the default fields list in edit mode in setup_form_mode
+                - see edit template above
+            - added addto mode to setup_form_mode, with a corresponding addto Exported method
+            - addto doesn't work with many_many relationships yet
+
 0.28    Fri  22 July 2005, 00:50
         - Maypole::FormBuilder::Model
             - added list_fields() method, which defaults to related(). Used in setup_form_mode() in the 
