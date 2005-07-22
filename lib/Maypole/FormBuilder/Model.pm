@@ -146,9 +146,11 @@ EOJS
     elsif ( $mode eq 'editlist' )
     {
         $args->{action} = $r->make_path( table      => $proto->table, # $r->table
-                                           action     => 'editlist',
-                                           %additional,
-                                           );
+                                         action     => 'editlist',
+                                         %additional,
+                                         );
+                                         
+        $args->{fields} = [ $proto->list_columns, $proto->list_fields ];
     }
     
     # -------------------------
@@ -200,6 +202,29 @@ sub display_columns
     my %pk = map { $_ => 1 } $proto->primary_columns;
     
     return grep { ! $pk{ $_ } } $proto->columns( 'All' );
+}
+
+=item list_columns
+
+This method is not defined here, but in L<Maypole::Model::Base|Maypole::Model::Base>, and 
+defaults to return C<display_columns>. 
+
+=item list_fields
+
+This method is new in L<Maypole::FormBuilder|Maypole::FormBuilder>. Defaults to C<related>, 
+which returns the names of C<has_many> accessors. 
+
+The C<list> template uses 
+C<list_fields> as the default list of fields to display, and C<setup_form_mode> sets this list in 
+the C<fields> argument in C<editlist> mode.
+
+=cut
+
+sub list_fields
+{
+    my ( $proto ) = @_;
+    
+    $proto->related;
 }
 
 # ------------------------------------------------------------ exported methods -----
@@ -479,6 +504,21 @@ sub editrelated : Exported
 # -------------------------------------------------------- other Maypole::Model::CDBI methods -----
 
 =back 
+
+=head2 Coordinating client and server forms
+
+Every form is used in two circumstances, and the forms must be built with equivalent properties in 
+each. In the first, a form object is constructed and used to generate an HTML form to be sent to the 
+client. In the second, a form object is constructed and is used to receive data sent in a form 
+submission from the client. These may be loosely termed the 'server' and 'client' forms (although they are 
+both built on the server). 
+
+The forms built in these two situations must have equivalent properties, such as the 
+same field lists, the same option lists for multi-valued fields, etc. 
+
+The point of co-ordination is the C<setup_form_mode> method. This supplies the set of characteristics 
+that must be synchronised by both versions of the form. C<setup_form_mode> selects a set of form 
+parameters based on the current C<action> of the Maypole request. 
 
 =head2 Maypole::Model::CDBI methods
 

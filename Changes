@@ -1,5 +1,20 @@
 Revision history for Maypole-FormBuilder
 
+0.28    Fri  22 July 2005, 00:50
+        - Maypole::FormBuilder::Model
+            - added list_fields() method, which defaults to related(). Used in setup_form_mode() in the 
+                editlist mode to supply the fields list (list_columns + list_fields), so that both the 
+                form built for the client, and the form built by the server to handle a submission, use 
+                the same default field list
+            - note: MP::QuickTable 0.31 tabulate() defaults to display_columns + related, but the list 
+                template sets fields to list_columns + list_fields, so that editlistview and listview 
+                show the same fields. 
+            - added some documentation to explain how server and client forms are 
+                co-ordinated by setup_form_mode.
+                
+        - templates
+            - list - explicitly set the fields argument to tabulate() in .listview (list_columns + list_fields)
+        
 0.27    Thur 21 July 2005, 19:45
         - templates
             - list - build a dummy form if no forms are available in editlistview

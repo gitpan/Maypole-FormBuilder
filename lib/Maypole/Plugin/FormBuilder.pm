@@ -239,9 +239,7 @@ sub _form_args
     
     $args{params} ||= $r->$get_request;
 
-    # now modify for the Maypole action/mode - setup_form_mode() is in 
-    # Maypole::Plugin::FormBuilder::Model::Base, but can be overridden in specific 
-    # model classes
+    # now modify for the Maypole action/mode 
     my $spec = $entity->setup_form_mode( $r, \%args );
     
     return $entity, %$spec;    
