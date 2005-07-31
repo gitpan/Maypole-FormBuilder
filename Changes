@@ -1,5 +1,8 @@
 Revision history for Maypole-FormBuilder
 
+0.302   Sun 31 July 2005, 18:55
+        - optionally pass $mode as a positional arg to as_form()
+
 0.301   Sun 31 July 2005, 17:30
         new TT view template from Ron McLain
 

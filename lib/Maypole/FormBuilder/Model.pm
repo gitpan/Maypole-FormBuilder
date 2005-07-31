@@ -305,6 +305,9 @@ means we need a separate method for creating new objects (in standard Maypole, a
 posts to C<do_edit>). But L<Class::DBI::FormBuilder|Class::DBI::FormBuilder> keeps things 
 simple.
 
+Note this method returns to the C<list> template, which is cute in the demo, but for real apps, you 
+probably want to return the user to the C<view> template instead.
+
 =cut
 
 sub addnew : Exported
@@ -318,6 +321,11 @@ sub addnew : Exported
     $r->model_class->create_from_form( $form ) || die "Unexpected create error";
     
     $self->list( $r );
+    
+    # to return to the view of the new object:
+    # my $obj = $r->model_class->create_from_form( $form ) || die "Unexpected create error";
+    # $r->objects( [ $obj ] );
+    # $self->view( $r );
 }
 
 =item addto

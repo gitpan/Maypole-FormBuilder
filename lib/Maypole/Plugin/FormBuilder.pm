@@ -190,7 +190,16 @@ There are a few additional Maypole-specific options:
     
 =item mode
 
-The form generated depends on the C<mode>. Defaults to the current action.
+The form generated depends on the C<mode>. Defaults to the current action. 
+
+As a special case, you can pass this as a positional argument, instead of a named 
+argument, i.e. 
+
+    my $form = $request->as_form( $mode );
+    
+    # or
+    
+    my $form = $request->as_form( $mode, %args );
 
 Pass this argument to generate a different form from that specified by the current 
 value of C<< $r->action >>. For instance, to generate a search form to include on a 
@@ -216,7 +225,14 @@ objects. To use a different object or model, pass it in the C<entity> argument:
 
 sub as_form
 {
-    my ( $r, %args_in ) = @_;
+    #my ( $r, %args_in ) = @_;
+    my $r = shift;
+    
+    my $mode = shift if @_ % 2;
+    
+    my %args_in = @_;
+    
+    $args_in{mode} = $mode if $mode;
     
     my ( $entity, %args ) = $r->_form_args( %args_in );
     
