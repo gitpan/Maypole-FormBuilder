@@ -5,18 +5,23 @@
 <div id="addnew">
 <fieldset>
 <legend>Edit <% $item->get( $item->stringify_column ) %></legend>
-<% $request->as_form( reset => 'reset', submit => 'submit' )->render %>
+<% $request->as_form->render %>
+
+% my @data = $request->tabulate( objects        => $item, 
+%                                with_colnames  => 1, 
+%                                fields         => [ $item->related ], 
+%                                field_callback => sub { $m->scomp( 'addmany', add_to => $_[0],
+%                                                                              field  => $_[1],
+%                                                                              ) },
+%                                );
+
+<% $request->quick_table->render( @data ) %>
+
 </fieldset>
+
 </div>
 
-<div id="search">
-<fieldset>
-<legend>Edit (with related) <% $item->get( $item->stringify_column ) %></legend>
-<% $request->as_form_with_related( reset        => 'reset', 
-                                   submit       => 'submit',
-                                   #show_related => [ qw( style pubs ) ],
-                                   mode => 'editrelated'
-                                   )->render %>
-</fieldset>
-</div>
+<& edit_with_related, item => $item &>
+
 % }
+

@@ -10,9 +10,9 @@
                           ) %]
 </div>
 
-<p>[% request.link( table  => item.table,
-                      action => 'list',
-                      label   => 'Back to listing',
+<p>[% request.link( 'table',  item.table,
+                      'action',  'list',
+                      'label', 'Back to listing',
                       ) %]</p>
 
 

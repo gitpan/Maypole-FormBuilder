@@ -296,6 +296,11 @@ input:hover[type=submit], input:hover[type=reset] {
     background-color: <% $button_hover_bg %>;
 }
 
+input.ReadOnly, input.Disabled {
+    background-color: <% $greyed_out %>;
+}
+
+
 textarea {
     width: 200px;
     font-family: sans-serif;
@@ -326,6 +331,8 @@ select {
     
     my $input_text      = '#2E415A';
     my $input_bg        = '#ffe';
+    
+    my $greyed_out      = '#eee';
     
     my $link            = '#225';
     my $link_hover      = '#222';

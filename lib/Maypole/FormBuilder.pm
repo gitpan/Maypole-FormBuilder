@@ -3,10 +3,10 @@ package Maypole::FormBuilder;
 use warnings;
 use strict;
 
-our $VERSION = 0.3;
+our $VERSION = 0.301;
 
-# $Rev: 302 $
-# $Date: 2005-07-22 01:08:15 +0100 (Fri, 22 Jul 2005) $
+# $Rev: 317 $
+# $Date: 2005-07-22 23:05:36 +0100 (Fri, 22 Jul 2005) $
 
 =head1 NAME
 

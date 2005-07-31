@@ -1,5 +1,8 @@
 Revision history for Maypole-FormBuilder
 
+0.301   Sun 31 July 2005, 17:30
+        new TT view template from Ron McLain
+
 0.3     Fri 22 July 2005, 23:00    
         - templates 
             - split the autohandler into header, navbar, title and footer templates
