@@ -9,18 +9,20 @@
 
 % my @data = $request->tabulate( objects        => $item, 
 %                                with_colnames  => 1, 
-%                                fields         => [ $item->related ], 
-%                                field_callback => sub { $m->scomp( 'addmany', add_to => $_[0],
-%                                                                              field  => $_[1],
-%                                                                              ) },
+%                                fields         => [ $item->edit_fields ], 
+%                                field_callback => sub { $m->scomp( 'addto', add_to => $_[0],
+%                                                                            field  => $_[1],
+%                                                                            ) },
+%                                
 %                                );
 
-<% $request->quick_table->render( @data ) %>
+<% $request->quick_table( td => { valign => 'top' } )->render( @data ) %>
 
 </fieldset>
 
 </div>
 
+% # this form does *not* work yet - it's just a placeholder for when CDBI::FB implements this
 <& edit_with_related, item => $item &>
 
 % }

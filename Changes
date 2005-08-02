@@ -1,5 +1,9 @@
 Revision history for Maypole-FormBuilder
 
+
+0.311   Tues  2 Aug  2005, 23:48
+        - included the new templates
+
 0.31    Tues  2 Aug  2005, 23:40
         - removed dependency on CDBI::Plugin::Type - CDBI::FB doesn't need it any more
         

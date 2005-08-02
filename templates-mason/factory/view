@@ -1,8 +1,7 @@
 
 % foreach my $item ( @$objects ) {
 
-% my $string = $item->stringify_column;
-<h2><% $item->$string %></h2>
+<h2><% $item %></h2>
 
 <div class="ViewTable">
 <% $request->quick_table( labels   => 'L', 
