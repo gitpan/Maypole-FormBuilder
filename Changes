@@ -1,5 +1,16 @@
 Revision history for Maypole-FormBuilder
 
+0.31    Tues  2 Aug  2005, 23:40
+        - removed dependency on CDBI::Plugin::Type - CDBI::FB doesn't need it any more
+        
+        - Maypole::FormBuilder::Model
+            - added search_columns(), search_fields(), edit_columns() and edit_fields() methods
+            
+        - templates
+            - search - moved all configuration of the search form into setup_form_mode(),
+                        using the new SET_$foo() processor in CDBI::FB 0.41
+            - edit - uses edit_fields() instead of related()
+
 0.302   Sun 31 July 2005, 18:55
         - optionally pass $mode as a positional arg to as_form()
 

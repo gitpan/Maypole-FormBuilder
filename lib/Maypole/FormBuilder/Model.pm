@@ -9,7 +9,7 @@ use base qw( Maypole::Model::Base
 use Class::DBI::Loader;
 use Class::DBI::AbstractSearch;
 use Class::DBI::Plugin::RetrieveAll;
-use Class::DBI::Plugin::Type;
+#use Class::DBI::Plugin::Type;
 
 use Class::DBI::FormBuilder; # 0.34;
 
@@ -111,6 +111,37 @@ sub setup_form_mode
         $args->{action} = $r->make_path( table  => $proto->table, # $r->table,
                                          action => 'do_search',
                                          );
+                                         
+        $args->{fields} ||= [ ( $proto->search_columns, $proto->search_fields ) ];
+        
+        # Remember search terms *if* the current request is processing a search form
+        # (note that normally, the search form is being built in the list template, so the action 
+        # is 'list'. If the list template were in 'editable' mode, and an update was submitted, 
+        # and the search form was in sticky mode, it would end up populated with the values from 
+        # the update).
+        $args->{sticky} = $r->action =~ /^(?:do_)?search$/;
+        
+        # see http://dev.mysql.com/doc/mysql/en/pattern-matching.html for a useful summary of using the 
+        # different operators in MySQL
+        my $cmp = [ ( '=', '!=', '<', '<=', '>', '>=', 
+                    'LIKE', 'NOT LIKE', 
+                    'REGEXP', 'NOT REGEXP', 
+                    'REGEXP BINARY', 'NOT REGEXP BINARY', 
+                    ) ];
+                    
+        $args->{submit} = 'submit';
+        $args->{reset}  = 'reset';
+        
+        # to just offer a few: $args{search_opt_order_by} = [ 'foo', 'foo DESC', 'bar' ];
+        $args->{search_opt_order_by} = 1;
+           
+        # tr set the cmp operator transparently via a hidden field: $args{search_opt_cmp} = 'LIKE';
+        $args->{search_opt_cmp} = $cmp;
+        
+        my $size = @$cmp + 1;
+        
+        $args->{process_fields}->{search_opt_cmp}      = [ '+SET_label(Search operator)', "+SET_size($size)" ];
+        $args->{process_fields}->{search_opt_order_by} = '+SET_label(Order by)';
     }
     
     # -------------------------
@@ -126,9 +157,12 @@ sub setup_form_mode
                                            action     => $maypole_action,
                                            %additional, 
                                            );
-        $args->{fields} = [];
-        $args->{submit} = $button_name;
-        $args->{table}  = 0; # don't place the form inside a table
+        $args->{fields}   = [];
+        $args->{required} = []; # otherwise, CDBI::FB may add required cols, and the button gets a
+                                # heading about 'highlighted fields are required', even though it 
+                                # has no fields
+        $args->{submit}   = $button_name;
+        $args->{table}    = 0; # don't place the form inside a table
         
         if ( $button_name eq 'delete' )
         {
@@ -217,6 +251,20 @@ EOJS
 
 =head2 Column and field lists
 
+Standard Maypole defines a few methods to return different lists of columns and column-like 
+accessors (C<display_columns>, C<list_columns>, and C<related>). Several more methods are 
+added here, and are used in the templates, but in general they will default to return the 
+same list as one of the standard methods. 
+
+The rationale is that in general, each template may need to display a different view of the 
+object(s) (C<edit>, C<view>, C<list>, C<search> etc.). Your own templates can use these methods,
+and you will probably want to define additional column/field listing methods in your custom 
+models and templates.
+
+Each C<*_columns> method has a matching <*_fields> method, which can be used to add non-column 
+fields (i.e. C<has_many> accessors) to the relevant form. (For C<display_columns>, the relevant 
+fields method is C<related>).
+
 =over
 
 =item display_columns
@@ -229,6 +277,43 @@ Note that L<Class::DBI::FormBuilder|Class::DBI::FormBuilder> will add back in
 B<hidden> fields for the primary key(s), to support lookups done in several of 
 its C<*_from_form> methods. 
 
+=item related
+
+Returns a list of accessors for C<has_many> related classes. These can appear as fields in a 
+form, but are not columns in the database. 
+
+=item list_columns
+
+This method is not defined here, but in L<Maypole::Model::Base|Maypole::Model::Base>, and 
+defaults to C<display_columns>. This is used to define the columns displayed in the C<list> 
+template. 
+
+=item list_fields
+
+Defaults to C<related>. 
+
+The C<list> template uses C<list_columns> plus C<list_fields> as the default list of fields to 
+display, and C<setup_form_mode> sets C<list_columns> plus C<list_fields> in the C<fields> 
+argument in C<editlist> mode, so that editable and navigable list views both present the same 
+fields. 
+
+=item search_columns
+
+Used to build the search form. Defaults to C<display_columns>.
+
+=item search_fields
+
+Used to build the search form. Defaults to an empty list.
+
+=item edit_columns
+
+Defaults to C<display_columns>.
+
+=item edit_fields
+
+Defaults to  C<related>. Used in the C<edit> template to display values of C<has_many> fields 
+and build separate forms for adding more items to a C<has_many>.
+
 =cut
 
 sub display_columns
@@ -240,34 +325,20 @@ sub display_columns
     return grep { ! $pk{ $_ } } $proto->columns( 'All' );
 }
 
-=item list_columns
-
-This method is not defined here, but in L<Maypole::Model::Base|Maypole::Model::Base>, and 
-defaults to C<display_columns>. This is used to define the columns displayed in the C<list> 
-template. 
-
-=item related
-
-Returns a list of accessors for C<has_many> related classes. These can appear as fields in a 
-form, but are not columns in the database. 
-
-=item list_fields
-
-This method is new in L<Maypole::FormBuilder|Maypole::FormBuilder>. Defaults to C<related>. 
-
-The C<list> template uses C<list_columns> plus C<list_fields> as the default list of fields to 
-display, and C<setup_form_mode> sets C<list_columns> plus C<list_fields> in the C<fields> 
-argument in C<editlist> mode, so that editable and navigable list views both present the same 
-fields. 
-
-=cut
-
 sub list_fields
 {
     my ( $proto ) = @_;
     
     $proto->related;
 }
+
+sub search_columns { shift->display_columns }
+
+sub search_fields { }
+
+sub edit_columns { shift->display_columns }
+
+sub edit_fields { shift->related }
 
 # ------------------------------------------------------------ exported methods -----
 

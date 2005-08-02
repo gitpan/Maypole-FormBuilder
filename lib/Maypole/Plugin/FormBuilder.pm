@@ -310,13 +310,15 @@ sub search_form
     
     my $class = delete( $args{entity} ) || $r->model_class;
     
+    # this is probably not true, since CDBI::FB is careful to change an object into a class
+    # before building the form
     die "search_form() must be called on a class, not an object" if ref( $class );
     
     # this must be set before calling _get_form_args()
     $args{mode} ||= 'search'; # or do_search - both set the form action to do_search in setup_form_mode()
     
     $args{required} ||= [];
-
+    
     %args = $r->_get_form_args( $class, %args );
     
     my $get_request = $r->can( 'ar' ) || $r->can( 'cgi' ) || die "no method for getting request";    
@@ -324,9 +326,6 @@ sub search_form
     $args{params} ||= $r->$get_request;    
     
     my $spec = $class->setup_form_mode( $r, \%args );
-    
-    # remember search terms if the current request is processing a search form
-    $spec->{sticky} = $r->action =~ /^(?:do_)?search$/;
     
     return $class->search_form( %$spec );
 }
