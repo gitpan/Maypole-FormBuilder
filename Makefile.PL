@@ -11,6 +11,7 @@ WriteMakefile
                            'Class::DBI::Loader' => '0',
                            'Class::DBI::Pager' => '0',
                            'Class::DBI::Plugin::RetrieveAll' => '0',
+                           'HTML::TreeBuilder' => '0',
                            'Maypole::Config' => '0',
                            'Maypole::Model::Base' => '0',
                            'Maypole::Plugin::QuickTable' => '0.2',

@@ -20,6 +20,7 @@ my $builder = Module::Build->new(
         'NEXT' => 0,
         'UNIVERSAL::require' => 0,
         'Maypole::Config' => 0,
+        'HTML::TreeBuilder' => 0,
         
     },
     add_to_cleanup      => [ 'Maypole-FormBuilder-*' ],

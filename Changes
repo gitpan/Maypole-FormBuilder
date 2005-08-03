@@ -1,5 +1,10 @@
 Revision history for Maypole-FormBuilder
 
+0.312   Wed  3 Aug  2005, 23:50
+        - swap the order of looking for ar or cgi in _form_args() (reported by Dave Howorth)
+        - activated CDBI::FB's new pretty-print mode, for the next few releases. Then I'll switch 
+            it off again. This makes HTML::TreeBuilder a new dependency. I'll try and figure out how 
+            to make this optional from Maypole.
 
 0.311   Tues  2 Aug  2005, 23:48
         - included the new templates

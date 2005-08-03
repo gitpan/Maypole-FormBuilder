@@ -11,7 +11,7 @@ use Class::DBI::AbstractSearch;
 use Class::DBI::Plugin::RetrieveAll;
 #use Class::DBI::Plugin::Type;
 
-use Class::DBI::FormBuilder; # 0.34;
+use Class::DBI::FormBuilder PrettyPrint => 'ALL';
 
 use Maypole::FormBuilder;
 

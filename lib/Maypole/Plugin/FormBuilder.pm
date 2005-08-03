@@ -250,7 +250,8 @@ sub _form_args
     
     %args = $r->_get_form_args( $entity, %args );
     
-    my $get_request = $r->can( 'ar' ) || $r->can( 'cgi' ) || die "no method for getting request";    
+    # cgi must come first, because ar is a Maypole class method
+    my $get_request = $r->can( 'cgi' ) || $r->can( 'ar' ) || die "no method for getting request";    
     
     $args{params} ||= $r->$get_request;
 
