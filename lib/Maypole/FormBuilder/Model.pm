@@ -1,6 +1,7 @@
 package Maypole::FormBuilder::Model;
 use warnings;
 use strict;
+#use Data::Dumper;
 
 use base qw( Maypole::Model::Base 
              Class::DBI 
@@ -11,7 +12,7 @@ use Class::DBI::AbstractSearch;
 use Class::DBI::Plugin::RetrieveAll;
 #use Class::DBI::Plugin::Type;
 
-use Class::DBI::FormBuilder PrettyPrint => 'ALL';
+use Class::DBI::FormBuilder 0.43;
 
 use Maypole::FormBuilder;
 
@@ -40,6 +41,270 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
 =head1 METHODS
 
 =over 4
+
+=cut
+    
+{
+
+    my ( $proto, $r, $args, $mode, $mode_args, $pk, %additional );
+
+    # build a dispatch table of coderefs    
+    my $Setup = {
+        # -------------------------
+        LIST => sub 
+        {
+            $args->{action} = $r->make_path( table      => $proto->table, 
+                                            action     => 'list',
+                                            );
+        },
+        
+        # -------------------------
+        ADDNEW => sub 
+        {
+            $args->{action} = $r->make_path( table  => $proto->table, 
+                                            action => 'addnew',
+                                            );
+        },
+        
+        # -------------------------
+        SEARCH => sub 
+        # Usually, a search form is specified by setting the mode in a template (e.g. the 
+        # list template). So it's fine to manually set the mode to 'search'. But if you want 
+        # to have a separate search page, don't put it 
+        # at $base/$table/search, because that'll execute the CDBI search method. Put 
+        # it at $base/$table/do_search, or better yet, create your own modes and templates 
+        # for $base/$table/advanced_search, $base/$table/simple_search etc.
+        {
+            $args->{action} = $r->make_path( table  => $proto->table, # $r->table,
+                                            action => 'do_search',
+                                            );
+                                            
+            $args->{fields} ||= [ ( $proto->search_columns, $proto->search_fields ) ];
+            
+            # Remember search terms *if* the current request is processing a search form
+            # (note that normally, the search form is being built in the list template, so the action 
+            # is 'list'. If the list template were in 'editable' mode, and an update was submitted, 
+            # and the search form was in sticky mode, it would end up populated with the values from 
+            # the update).
+            $args->{sticky} = $r->action =~ /^(?:do_)?search$/;
+            
+            # see http://dev.mysql.com/doc/mysql/en/pattern-matching.html for a useful summary of using the 
+            # different operators in MySQL
+            my $cmp = [ ( '=', '!=', '<', '<=', '>', '>=', 
+                        'LIKE', 'NOT LIKE', 
+                        'REGEXP', 'NOT REGEXP', 
+                        'REGEXP BINARY', 'NOT REGEXP BINARY', 
+                        ) ];
+                        
+            $args->{submit} = 'submit';
+            $args->{reset}  = 'reset';
+            
+            # to just offer a few: $args{search_opt_order_by} = [ 'foo', 'foo DESC', 'bar' ];
+            $args->{search_opt_order_by} = 1;
+            
+            # tr set the cmp operator transparently via a hidden field: $args{search_opt_cmp} = 'LIKE';
+            $args->{search_opt_cmp} = $cmp;
+            
+            my $size = @$cmp + 1;
+            
+            $args->{process_fields}->{search_opt_cmp}      = [ '+SET_label(Search operator)', "+SET_size($size)" ];
+            $args->{process_fields}->{search_opt_order_by} = '+SET_label(Order by)';
+        },
+        
+        # -------------------------
+        BUTTON => sub 
+        {
+            my $button_name = $1;
+            
+            my %despatch = ( delete => 'do_delete' );
+            
+            my $maypole_action = $despatch{ $button_name } || $button_name;
+            
+            $args->{action} = $r->make_path( table      => $proto->table, 
+                                             action     => $maypole_action,
+                                             %additional, 
+                                             );
+            $args->{fields}   = [];
+            $args->{required} = []; # otherwise, CDBI::FB may add required cols, and the button gets a
+                                    # heading about 'highlighted fields are required', even though it 
+                                    # has no fields
+            $args->{submit}   = $button_name;
+            $args->{table}    = 0; # don't place the form inside a table
+            
+            if ( $button_name eq 'delete' )
+            {
+                $args->{jsfunc} = '
+                    if (form._submit.value == "delete") {
+                        if (confirm("Really DELETE this entry?")) return true;
+                        return false;
+                    }';
+            }
+        },
+        
+        # -------------------------
+        EDITLIST => sub 
+        # This is for generating a single form (i.e. row) within the editable list table. 
+        # Note that although it's a 'list' action, it is associated with a single object 
+        # (specified in %additional). The list() public method does whatever needs to be 
+        # done with that object, and then returns via _list(), which regenerates the list 
+        # page.
+        {
+            $args->{action} = $r->make_path( table      => $proto->table, # $r->table
+                                            action     => 'editlist',
+                                            %additional,
+                                            );
+                                            
+            $args->{fields} = [ $proto->list_columns, $proto->list_fields ];
+        },
+        
+        # -------------------------
+        EDIT => sub 
+        {
+            $args->{action} = $r->make_path( table      => $proto->table,
+                                            action     => 'do_edit',
+                                            %additional, 
+                                            );
+                                            
+            $args->{reset}  = 'reset';
+            $args->{submit} = 'submit';
+            $args->{fields} = [ $proto->display_columns ], # $proto->related ];
+        },
+        
+        # -------------------------
+        EDITRELATED => sub 
+        {
+            $args->{action} = $r->make_path( table      => $proto->table,
+                                            action     => 'editrelated',
+                                            %additional, 
+                                            );
+        },
+        
+        # -------------------------
+        ADDTO => sub 
+        {
+            $args->{action} = $r->make_path( table      => $proto->table,
+                                            action     => 'addto',
+                                            );
+                                            
+            if ( $mode_args )
+            {   # client form
+            
+                # build a form representing $proto, which is the class at the 'many' end 
+                # of a has_many relationship from $add_to, via the field/accessor $field on $add_to 
+                # i.e. $add_to->$field returns many $proto's
+                
+                # the form has 2 extra hidden fields, to identify $add_to 
+                
+                # so when the submitted form is processed, it will retrieve $add_to by looking up 
+                # id $target_id in class $target_class, figure out the appropriate accessor (i.e. 
+                # figure out $field from the class of the submitted form i.e. $proto), and use that 
+                # information to add a new entry to $add_to
+                
+                my $add_to = $mode_args->{addto} || die "no parent object for building client form";
+                my $field  = $mode_args->{field} || die "don't know which field of \$addto to use";
+                
+                my $accessor = $add_to->meta_info( has_many => $field )->{args}->{foreign_key};
+                
+                my $target_class = ref( $add_to );
+                my $target_id    = $add_to->id;
+                
+                # XXX: see ADDMANY for passing arguments in the form action url
+                $args->{process_fields}->{__target_class__} = [ "+SET_value($target_class)", '+HIDDEN' ];
+                $args->{process_fields}->{__target_id__}    = [ "+SET_value($target_id)",    '+HIDDEN' ];
+                $args->{process_fields}->{ $accessor }      = [ "+SET_value($target_id)",    '+HIDDEN' ];
+            }
+            else
+            {   # server form - must ensure the fields exist on the form, so their values can be extracted
+                $args->{process_fields}->{__target_class__} = '+ADD_FIELD'; 
+                $args->{process_fields}->{__target_id__}    = '+ADD_FIELD'; 
+            }
+        },
+        
+        # -------------------------
+        ADDHOWMANY => sub 
+        {
+            $args->{action} = $r->make_path( table      => $proto->table,
+                                             action     => 'addhowmany',
+                                             );
+                                             
+            $args->{fields} = [];
+            $args->{table}  = 0;
+            $args->{submit} = 'add...';
+            
+            if ( $mode_args )
+            {
+                # client form
+                
+                my $add_to = $mode_args->{addto} || die "no parent object for building client form";
+                
+                my $target_class = ref( $add_to );
+                my $target_id    = $add_to->id;
+                
+                my $options = [ 2 .. $mode_args->{how_many} ];
+                                                
+                $args->{options} = { __how_many__ => $options };
+                
+                $args->{process_fields} = { __how_many__ => [ "+SET_label(Add several:)", 
+                                                              "+SET_value(2)",
+                                                              "+SET_style(width:4em)",
+                                                              ] };
+        
+                # XXX: see ADDMANY for passing arguments in the form action url
+                $args->{process_fields}->{__target_class__} = [ "+SET_value($target_class)", '+HIDDEN' ];
+                $args->{process_fields}->{__target_id__}    = [ "+SET_value($target_id)",    '+HIDDEN' ];
+            }
+            else
+            {
+                # server form
+                $args->{process_fields}->{__how_many__}     = '+ADD_FIELD'; 
+                $args->{process_fields}->{__target_class__} = '+ADD_FIELD'; 
+                $args->{process_fields}->{__target_id__}    = '+ADD_FIELD'; 
+            }
+        },
+        
+        # -------------------------
+        ADDMANY => sub 
+        {
+            # set and hide the related item value (i.e. the field in the table at the 'many' end 
+            # of the has_many relationship, which points back to the table at the 'has' end 
+            # (because the 'many' table also 'has_a' the parent table)
+            if ( my $add_to = $mode_args->{addto} )
+            {
+                # client form
+                
+                my $how_many = $mode_args->{how_many} or die "need to know how many";
+                
+                my $target_id = $add_to->id;
+                
+                # what field of $proto has_a $addto?
+                my $accessor_name;
+                foreach my $has_a ( values %{ $proto->meta_info( 'has_a' ) } )
+                {
+                    next unless $has_a->foreign_class eq ref $add_to;
+                    my $accessor = $has_a->accessor; # a CDBI::Column object
+                    $accessor_name = $accessor->name;
+                    last if $accessor;            
+                }
+                
+                $args->{action} = $r->make_path( table      => $proto->table,
+                                                 action     => 'addmany',
+                                                 additional => "$accessor_name/$how_many",
+                                                 );
+                
+                $args->{process_fields}->{ $accessor_name }  = [ "+SET_value($target_id)", '+HIDDEN' ];
+            }
+            else
+            {
+                # server form 
+                $args->{action} = $r->make_path( table      => $proto->table,
+                                                action     => 'addmany',
+                                                );
+            }
+        },
+        
+        
+    
+    }; # / $Setup
     
 =item setup_form_mode
 
@@ -47,14 +312,16 @@ This method is responsible for ensuring that the 'server' form and the 'client' 
 equivalent - see I<Coordinating client and server forms>.
 
 Returns a form spec for the selected form mode. The mode defaults to C<< $r->action >>. 
-You can set a different mode in the args hash to the C<as_form> call. Mostly, this method is 
-responsible for setting the C<action> parameter of the form. 
+You can set a different mode in the args hash to the C<as_form> call. 
 
 Override this in model classes to configure custom modes, and call 
 
     $proto->SUPER::setup_form_mode( $r, $args )
     
 in the custom method if it doesn't know the mode.
+
+You can add a C<mode_args> argument to the hashref of arguments that reach C<setup_form_mode>. For 
+instance, the C<addto> template uses this to pass 
 
 Modes supported here are:
 
@@ -68,182 +335,47 @@ Modes supported here are:
     do_edit
     editrelated
     addto
+    addhowmany
+    addmany
     
 =cut
 
-sub setup_form_mode
-{
-    my ( $proto, $r, $args ) = @_;
-    
-    # the mode is set in _get_form_args
-    my $mode = $args->{mode} || die "no mode for $proto";
-    
-    my $pk = $proto->primary_column;
-        
-    my %additional = ref( $proto ) ? ( additional => $proto->$pk ) : ();
-    
-    # XXX this needs to be refactored into a dispatch table
-    # -------------------------
-    if ( $mode eq 'list' )
+    # -----------------------------
+    # note - arguments shared with the dispatch table are declared above the table, not here
+    sub setup_form_mode
     {
-        $args->{action} = $r->make_path( table      => $proto->table, 
-                                         action     => 'list',
-                                         );
-    }
-    
-    # -------------------------
-    elsif ( $mode eq 'addnew' )
-    {
-        $args->{action} = $r->make_path( table  => $proto->table, 
-                                         action => 'addnew',
-                                         );
-    }
-    
-    # -------------------------
-    # Usually, a search form is specified by setting the mode in a template (e.g. the 
-    # list template). So it's fine to manually set the mode to 'search'. But if you want 
-    # to have a separate search page, don't put it 
-    # at $base/$table/search, because that'll execute the CDBI search method. Put 
-    # it at $base/$table/do_search, or better yet, create your own modes and templates 
-    # for $base/$table/advanced_search, $base/$table/simple_search etc.
-    elsif ( $mode =~ /^(?:do_)?search$/ )
-    {
-        $args->{action} = $r->make_path( table  => $proto->table, # $r->table,
-                                         action => 'do_search',
-                                         );
-                                         
-        $args->{fields} ||= [ ( $proto->search_columns, $proto->search_fields ) ];
+        ( $proto, $r, $args ) = @_;
         
-        # Remember search terms *if* the current request is processing a search form
-        # (note that normally, the search form is being built in the list template, so the action 
-        # is 'list'. If the list template were in 'editable' mode, and an update was submitted, 
-        # and the search form was in sticky mode, it would end up populated with the values from 
-        # the update).
-        $args->{sticky} = $r->action =~ /^(?:do_)?search$/;
+        # the mode is set in _get_form_args
+        $mode = delete $args->{mode} || die "no mode for $proto";
         
-        # see http://dev.mysql.com/doc/mysql/en/pattern-matching.html for a useful summary of using the 
-        # different operators in MySQL
-        my $cmp = [ ( '=', '!=', '<', '<=', '>', '>=', 
-                    'LIKE', 'NOT LIKE', 
-                    'REGEXP', 'NOT REGEXP', 
-                    'REGEXP BINARY', 'NOT REGEXP BINARY', 
-                    ) ];
-                    
-        $args->{submit} = 'submit';
-        $args->{reset}  = 'reset';
+        $mode_args = delete $args->{mode_args};
         
-        # to just offer a few: $args{search_opt_order_by} = [ 'foo', 'foo DESC', 'bar' ];
-        $args->{search_opt_order_by} = 1;
-           
-        # tr set the cmp operator transparently via a hidden field: $args{search_opt_cmp} = 'LIKE';
-        $args->{search_opt_cmp} = $cmp;
+        $pk = $proto->primary_column;
+            
+        # this is probably unnecessary, as not used often, and will probably go away soon
+        %additional = ref( $proto ) ? ( additional => $proto->$pk ) : ();
         
-        my $size = @$cmp + 1;
-        
-        $args->{process_fields}->{search_opt_cmp}      = [ '+SET_label(Search operator)', "+SET_size($size)" ];
-        $args->{process_fields}->{search_opt_order_by} = '+SET_label(Order by)';
-    }
-    
-    # -------------------------
-    elsif ( $mode =~ /^(\w+)_button$/ )
-    {
-        my $button_name = $1;
-        
-        my %despatch = ( delete => 'do_delete' );
-        
-        my $maypole_action = $despatch{ $button_name } || $button_name;
-        
-        $args->{action} = $r->make_path( table      => $proto->table, 
-                                           action     => $maypole_action,
-                                           %additional, 
-                                           );
-        $args->{fields}   = [];
-        $args->{required} = []; # otherwise, CDBI::FB may add required cols, and the button gets a
-                                # heading about 'highlighted fields are required', even though it 
-                                # has no fields
-        $args->{submit}   = $button_name;
-        $args->{table}    = 0; # don't place the form inside a table
-        
-        if ( $button_name eq 'delete' )
+        CASE:
         {
-            $args->{jsfunc} = <<EOJS
-if (form._submit.value == "delete") {
-    if (confirm("Really DELETE this entry?")) return true;
-    return false;
-}
-EOJS
+            $Setup->{LIST}->(),         last CASE if $mode eq 'list';
+            $Setup->{ADDNEW}->(),       last CASE if $mode eq 'addnew';
+            $Setup->{SEARCH}->(),       last CASE if $mode =~ /^(?:do_)?search$/;
+            $Setup->{BUTTON}->(),       last CASE if $mode =~ /^(\w+)_button$/;
+            $Setup->{EDITLIST}->(),     last CASE if $mode eq 'editlist';
+            $Setup->{EDIT}->(),         last CASE if $mode =~ /^(?:do_)?edit$/;
+            $Setup->{EDITRELATED}->(),  last CASE if $mode eq 'editrelated';
+            $Setup->{ADDTO}->(),        last CASE if $mode eq 'addto';
+            $Setup->{ADDHOWMANY}->(),   last CASE if $mode eq 'addhowmany';
+            $Setup->{ADDMANY}->(),      last CASE if $mode eq 'addmany';
+            
+            die "No form specification found for mode '$mode' on item '$proto'";
         }
-    }    
-    
-    # -------------------------
-    # This is for generating a single form (i.e. row) within the editable list table. 
-    # Note that although it's a 'list' action, it is associated with a single object 
-    # (specified in %additional). The list() public method does whatever needs to be 
-    # done with that object, and then returns via _list(), which regenerates the list 
-    # page.
-    elsif ( $mode eq 'editlist' )
-    {
-        $args->{action} = $r->make_path( table      => $proto->table, # $r->table
-                                         action     => 'editlist',
-                                         %additional,
-                                         );
-                                         
-        $args->{fields} = [ $proto->list_columns, $proto->list_fields ];
-    }
-    
-    # -------------------------
-    elsif ( $mode =~ /^(?:do_)?edit$/ )
-    {
-        $args->{action} = $r->make_path( table      => $proto->table,
-                                         action     => 'do_edit',
-                                         %additional, 
-                                         );
-                                           
-        $args->{reset}  = 'reset';
-        $args->{submit} = 'submit';
-        $args->{fields} = [ $proto->display_columns ], # $proto->related ];
-    }
-    
-    # -------------------------
-    elsif ( $mode eq 'addto' )
-    {
-        $args->{action} = $r->make_path( table      => $proto->table,
-                                         action     => 'addto',
-                                         );
         
-        # the template will already set this to +SET_VALUE(Some::Class) for the 
-        # client, but we must ensure the field exists on the server form
-        if ( my $p = $args->{process_fields}->{__target_class__} )
-        {   # client form
-            $p = [ $p, '+HIDDEN' ];
-            $args->{process_fields}->{__target_class__} = $p;
-        }
-        else
-        {   # server form
-            $args->{process_fields}->{__target_class__} = '+ADD_FIELD'; 
-        }
+        # the coderefs all operate on $args
+        return $args;
     }
-    
-    # -------------------------
-    elsif ( $mode eq 'editrelated' )
-    {
-        $args->{action} = $r->make_path( table      => $proto->table,
-                                         action     => 'editrelated',
-                                         %additional, 
-                                         );
-    }
-    
-    # -------------------------
-    else
-    {
-        die "No form specification found for mode '$mode' on item '$proto'";
-    }
-    
-    delete $args->{mode};
-    
-    return $args;
-}
-
+}    
 
 # ---------------------------------------------------------------------------------- utility -----
 
@@ -276,6 +408,10 @@ to display.
 Note that L<Class::DBI::FormBuilder|Class::DBI::FormBuilder> will add back in 
 B<hidden> fields for the primary key(s), to support lookups done in several of 
 its C<*_from_form> methods. 
+
+=item display_fields
+
+Defaults to C<related()>.
 
 =item related
 
@@ -401,6 +537,8 @@ sub addnew : Exported
 
 =item addto
 
+Adds a new item in a C<has_many> relationship.
+
 =cut
 
 sub addto : Exported
@@ -409,7 +547,104 @@ sub addto : Exported
     
     my $form = $r->as_form;
     
-    return $self->list( $r ) if $r->model_class->create_from_form( $form );
+    # example: a brewery has_many beers, we're adding a new beer
+    
+    # Don't need to know anything about the target class (brewery) to create the 
+    # new related item (beer),  because the id of the target class (brewery) is 
+    # already supplied in the form submission i.e. the submitted form has details 
+    # of a new beer, *including* the id of the brewery. 
+    
+    # The beer has_a brewery, so creating the new beer with the brewery id in place 
+    # is the same as saying $brewery->add_to_beers( $beer )
+    
+    if ( $r->model_class->create_from_form( $form ) )
+    {
+        # but now we *do* need to know about the target, so we can return to the appropriate view
+        my $add_to_class = $form->field( '__target_class__' );
+        my $add_to_id    = $form->field( '__target_id__' );
+        
+        my $add_to = $add_to_class->retrieve( $add_to_id );
+        
+        $r->objects( [ $add_to ] );
+        
+        $r->model_class( $add_to_class );
+        
+        return $add_to->view( $r );
+    }
+    else
+    {
+        # failed - go back to edit form - this is a point where it would be nice to have 
+        # the CDBI error from the failed create operation available somehow
+        #return $self->edit( $r ); - no, this will go back to the related class, not the target class
+        
+        die "Unexpected error creating related object"; # sorry about this...
+    }
+}
+
+=item addhowmany
+
+Receives the number of requested items and forwards to the C<addmany> template.
+
+=cut
+
+sub addhowmany : Exported
+{
+    my ( $self, $r ) = @_;
+    
+    my $form = $r->as_form;
+    
+    return unless $form->submitted && $form->validate;
+        
+    my $add_to_class = $form->field( '__target_class__' );
+    my $add_to_id    = $form->field( '__target_id__' );
+    
+    my $add_to = $add_to_class->retrieve( $add_to_id );
+    
+    $r->template_args->{how_many} = $form->field( '__how_many__' );
+    $r->template_args->{add_to}   = $add_to;
+    
+    $r->template( 'addmany' );    
+}
+
+=item addmany
+
+Add several items to the target, where <target_class has_many items>.
+
+=cut
+
+# e.g. a brewery has_many beers
+
+# $self is Beer (i.e. the class name of the 'many')
+# $accessor is the has_a accessor on Beer i.e. Beer->brewery
+# $owner is the item that has_many i.e. $brewery
+
+# - split the submitted data into groups
+# - munge column names, and send each group to $self->create
+# - note that since the value of the has_a field is supplied, we don't 
+#       need to identify the target object in order to set up the has_a 
+#       relationship
+sub addmany : Exported
+{
+    my ( $self, $r ) = @_;
+    
+    # the form action supplies these as additional path-info in the form 'action':
+    my ( $accessor, $how_many ) = @{ $r->args };
+    
+    my $form = $r->as_multiform( how_many => $how_many );
+    
+    return unless $form->submitted && $form->validate;
+    
+    my @new = $self->create_from_multiform( $form );
+    
+    # set up the view of the parent object
+    
+    my $parent = $new[0]->$accessor;
+    
+    $r->objects( [ $parent ] );
+    
+    $r->model_class( ref $parent );    
+    
+    return $self->view( $r );
 }
 
 =item edit
@@ -502,6 +737,7 @@ sub do_search : Exported
     
     $r->template( 'list' );
     
+    # self becomes the pager
     $self = $self->do_pager( $r );
     
     $r->objects( [ $self->search_where_from_form( $form ) ] );

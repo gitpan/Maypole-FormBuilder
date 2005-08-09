@@ -1,5 +1,24 @@
 Revision history for Maypole-FormBuilder
 
+0.32    Tues 9 Aug  2005, 1:20
+        - pass the Maypole request object to CGI::FB, instead of the CGI or Apache request object,
+            since Maypole has a suitable params() method - suggested by Dave Howarth
+            
+        - de-activated default PrettyPrint mode - you can get it now using CDBI::FB's post-processor 
+            architecture 
+            
+        - Maypole::FormBuilder::Model
+            - setup_form_mode() accepts a new mode_args argument, which is a hashref. The addto and
+                addmany templates use this 
+            - refactored setup_form_mode() to use a dispatch table of coderefs
+            
+        - templates
+            - edit  - simplified generation and layout of has_many forms
+            - addto - simplified, moved code into setup_from_mode()
+            - addmany - supports adding multiple items in a has_many relationship
+            - maypole.css - slight tweaks
+            - list - slight tweaks
+
 0.312   Wed  3 Aug  2005, 23:50
         - swap the order of looking for ar or cgi in _form_args() (reported by Dave Howorth)
         - activated CDBI::FB's new pretty-print mode, for the next few releases. Then I'll switch 

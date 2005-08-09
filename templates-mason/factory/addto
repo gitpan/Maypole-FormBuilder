@@ -1,0 +1,26 @@
+
+<h2>Add a <% $related_class->moniker %> to <% $add_to->moniker %>: <% $add_to %></h2>
+
+<% $form->render %>
+
+<%init>
+    my $related_class = $add_to->related_class( $request, $field );
+    
+    my $accessor = $add_to->meta_info( has_many => $field )->{args}->{foreign_key};
+    
+    my $target_class = ref( $add_to );
+    
+    my $target_id = $add_to->id;
+    
+    my $form = $request->as_form( entity         => $related_class,
+                                  mode           => 'addto',
+                                  process_fields => { $accessor        => [ "+SET_value($target_id)", '+HIDDEN' ], 
+                                                      __target_class__ =>   "+SET_value($target_class)",  
+                                                      },
+                                  );
+    
+</%init>
+<%args>
+    $add_to
+    $field
+</%args>

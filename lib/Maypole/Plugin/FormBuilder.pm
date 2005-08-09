@@ -239,6 +239,29 @@ sub as_form
     return $entity->as_form( %args );
 }
 
+=item as_multiform
+
+Wrapper for C<Class::DBI::FormBuilder::as_multiform()>.
+
+=cut
+
+sub as_multiform
+{
+    my $r = shift;
+    
+    my $mode = shift if @_ % 2;
+    
+    my %args_in = @_;
+    
+    $args_in{mode} = $mode if $mode;
+    
+    my $how_many = delete $args_in{how_many} or die 'need to know how many to make';
+    
+    my ( $entity, %args ) = $r->_form_args( %args_in );
+    
+    return $entity->as_multiform( %args, how_many => $how_many );
+}
+
 sub _form_args
 {
     my ( $r, %args ) = @_;
@@ -250,10 +273,7 @@ sub _form_args
     
     %args = $r->_get_form_args( $entity, %args );
     
-    # cgi must come first, because ar is a Maypole class method
-    my $get_request = $r->can( 'cgi' ) || $r->can( 'ar' ) || die "no method for getting request";    
-    
-    $args{params} ||= $r->$get_request;
+    $args{params} ||= $r; # $r has a suitable param() method
 
     # now modify for the Maypole action/mode 
     my $spec = $entity->setup_form_mode( $r, \%args );
