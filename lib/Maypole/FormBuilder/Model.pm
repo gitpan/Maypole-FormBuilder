@@ -1,24 +1,17 @@
 package Maypole::FormBuilder::Model;
 use warnings;
 use strict;
-#use Data::Dumper;
 
-use base qw( Maypole::Model::Base 
-             Class::DBI 
-             );
-
+use base qw( Maypole::Model::Base Class::DBI );
 use Class::DBI::Loader;
 use Class::DBI::AbstractSearch;
 use Class::DBI::Plugin::RetrieveAll;
-#use Class::DBI::Plugin::Type;
-
 use Class::DBI::FormBuilder 0.43;
+use List::Util();
 
 use Maypole::FormBuilder;
 
 our $VERSION = $Maypole::FormBuilder::VERSION;
-
-#use Class::DBI::Pager; - now loaded in MP::Plugin::FB::setup()
 
 =head1 NAME
 
@@ -53,17 +46,24 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
         # -------------------------
         LIST => sub 
         {
-            $args->{action} = $r->make_path( table      => $proto->table, 
-                                            action     => 'list',
-                                            );
+            $args->{action} = $r->make_path( table  => $proto->table, 
+                                             action => 'list',
+                                             );
         },
         
         # -------------------------
         ADDNEW => sub 
         {
             $args->{action} = $r->make_path( table  => $proto->table, 
-                                            action => 'addnew',
-                                            );
+                                             action => 'addnew',
+                                             );
+                                            
+            $args->{fields} = [ $proto->addnew_columns, $proto->addnew_fields ];
+            
+            $args->{entity} = $r->model_class;
+            $args->{reset}  = 'reset';
+            $args->{submit} = 'submit';
+            $args->{sticky} = 0;
         },
         
         # -------------------------
@@ -155,19 +155,87 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
                                             );
                                             
             $args->{fields} = [ $proto->list_columns, $proto->list_fields ];
+            
+            # Note: turn off stickiness. Otherwise, all the forms will display the values submitted 
+            # in the previous action, e.g. addnew.
+            $args->{submit}          = [ qw( view update edit delete ) ];
+            $args->{reset}           = 'reset';
+            $args->{selectnum}       = 2;
+            $args->{no_textareas}    = 1;
+            $args->{sticky}          = 0;
+            
+            $args->{jsfunc}          = qq(
+                if (form._submit.value == "delete") {
+                    if (confirm("Really DELETE this entry?")) return true;
+                    return false;
+                }
+            );
+                                    
         },
         
         # -------------------------
         EDIT => sub 
         {
             $args->{action} = $r->make_path( table      => $proto->table,
-                                            action     => 'do_edit',
-                                            %additional, 
-                                            );
+                                             action     => 'do_edit',
+                                             %additional, 
+                                             );
                                             
             $args->{reset}  = 'reset';
             $args->{submit} = 'submit';
-            $args->{fields} = [ $proto->display_columns ], # $proto->related ];
+            $args->{fields} = [ $proto->edit_columns ], # $proto->related ];
+            
+            # see note in EDIT_ALL_HAS_A
+            $args->{sticky} = 0;
+        },
+        
+        
+        # -------------------------
+        # this is basically similar to EDIT, but needs a separate edit_as_has_a() exported method 
+        # to return to the parent object's edit template after submitting
+        EDIT_ALL_HAS_A => sub
+        {
+            # If there is no child object yet, then $proto is initialised as an object 
+            # with id 0, which generates a form with a different name from the one 
+            # generated for the server (the client form includes '_0' at the end).
+            if ( ref( $proto ) and $proto->id == 0 )
+            {
+                $proto = ref $proto;
+                %additional = ();
+                $args->{entity} = $proto;
+            }
+        
+            $args->{action} = $r->make_path( table      => $proto->table,
+                                             action     => 'edit_all_has_a',
+                                             %additional, 
+                                             );
+                                            
+            $args->{reset}  = 'reset';
+            $args->{submit} = 'submit';
+            $args->{fields} = [ $proto->edit_columns ]; #, # $proto->related ];
+            
+            # The appropriate setting will depend on your detailed setup and workflows. In the default 
+            # setup, the edit page displays multiple forms, and after submitting one, the app returns to 
+            # the edit page. If any other forms on the page have fields with the same name as the submitted 
+            # form, they will pick up the submitted value if 'sticky' is on.
+            # This could probably be fixed by issuing a redirect to the edit page after processing a submission, 
+            # rather than using the template switcheroo.
+            $args->{sticky} = 0;
+                
+            if ( my $parent = $mode_args->{parent} )
+            {
+                # client form
+                my $parent_class = ref $parent;
+                my $parent_id    = $parent->id;
+                
+                $args->{process_fields}->{__parent_class__} = [ "+SET_value($parent_class)", '+HIDDEN' ];
+                $args->{process_fields}->{__parent_id__}    = [ "+SET_value($parent_id)",    '+HIDDEN' ];
+            }
+            else
+            {   # server form - must ensure the fields exist on the form, so their values can be extracted
+                $args->{process_fields}->{__parent_class__} = '+ADD_FIELD'; 
+                $args->{process_fields}->{__parent_id__}    = '+ADD_FIELD'; 
+            }        
         },
         
         # -------------------------
@@ -265,20 +333,21 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
         # -------------------------
         ADDMANY => sub 
         {
+            $args->{fields} = [ $proto->addmany_columns, $proto->addmany_fields ];
+            
             # set and hide the related item value (i.e. the field in the table at the 'many' end 
             # of the has_many relationship, which points back to the table at the 'has' end 
             # (because the 'many' table also 'has_a' the parent table)
             if ( my $add_to = $mode_args->{addto} )
             {
                 # client form
-                
                 my $how_many = $mode_args->{how_many} or die "need to know how many";
                 
                 my $target_id = $add_to->id;
                 
                 # what field of $proto has_a $addto?
                 my $accessor_name;
-                foreach my $has_a ( values %{ $proto->meta_info( 'has_a' ) } )
+                foreach my $has_a ( values %{ $proto->meta_info( 'has_a' ) || {} } )
                 {
                     next unless $has_a->foreign_class eq ref $add_to;
                     my $accessor = $has_a->accessor; # a CDBI::Column object
@@ -291,14 +360,15 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
                                                  additional => "$accessor_name/$how_many",
                                                  );
                 
-                $args->{process_fields}->{ $accessor_name }  = [ "+SET_value($target_id)", '+HIDDEN' ];
+                $args->{process_fields}->{ $accessor_name } = [ "+SET_value($target_id)", '+HIDDEN' ];
             }
             else
             {
                 # server form 
-                $args->{action} = $r->make_path( table      => $proto->table,
-                                                action     => 'addmany',
-                                                );
+                $args->{action} = $r->make_path( table  => $proto->table,
+                                                 action => 'addmany',
+                                                 );
+        
             }
         },
         
@@ -332,6 +402,7 @@ Modes supported here are:
     ${action}_button    where $action is any public action on the class
     editlist
     edit
+    edit_all_has_a
     do_edit
     editrelated
     addto
@@ -364,10 +435,13 @@ Modes supported here are:
             $Setup->{BUTTON}->(),       last CASE if $mode =~ /^(\w+)_button$/;
             $Setup->{EDITLIST}->(),     last CASE if $mode eq 'editlist';
             $Setup->{EDIT}->(),         last CASE if $mode =~ /^(?:do_)?edit$/;
+            $Setup->{EDIT_ALL_HAS_A}->(),last CASE if $mode eq 'edit_all_has_a';
             $Setup->{EDITRELATED}->(),  last CASE if $mode eq 'editrelated';
             $Setup->{ADDTO}->(),        last CASE if $mode eq 'addto';
             $Setup->{ADDHOWMANY}->(),   last CASE if $mode eq 'addhowmany';
             $Setup->{ADDMANY}->(),      last CASE if $mode eq 'addmany';
+            
+            
             
             die "No form specification found for mode '$mode' on item '$proto'";
         }
@@ -450,6 +524,14 @@ Defaults to C<display_columns>.
 Defaults to  C<related>. Used in the C<edit> template to display values of C<has_many> fields 
 and build separate forms for adding more items to a C<has_many>.
 
+=item addnew_columns
+
+Defaults to C<display_columns>.
+
+=item addnew_fields
+
+Defaults to empty list, at least until I add C<addmany> support to C<addnew>.
+
 =cut
 
 sub display_columns
@@ -458,7 +540,7 @@ sub display_columns
     
     my %pk = map { $_ => 1 } $proto->primary_columns;
     
-    return grep { ! $pk{ $_ } } $proto->columns( 'All' );
+    return grep { ! $pk{ $_ } } Class::DBI::FormBuilder->db_order_columns( $proto, 'All' );
 }
 
 sub list_fields
@@ -469,12 +551,45 @@ sub list_fields
 }
 
 sub search_columns { shift->display_columns }
-
-sub search_fields { }
+sub search_fields  {}
 
 sub edit_columns { shift->display_columns }
+sub edit_fields  { shift->related }
 
-sub edit_fields { shift->related }
+sub addnew_columns { shift->display_columns }
+sub addnew_fields  { }
+
+sub addmany_columns { shift->display_columns }
+sub addmany_fields  { }
+
+sub view_columns { shift->display_columns }
+sub view_fields  { shift->related }
+
+
+sub hasa_columns
+{
+    my ( $proto ) = @_;
+    
+    my $has_a = $proto->meta_info( 'has_a' );
+    
+    my @ordered = grep { $has_a->{ $_->name } && $has_a->{ $_->name }->foreign_class->isa( 'Class::DBI' ) } 
+                  Class::DBI::FormBuilder->db_order_columns( $proto, 'All' );
+    
+    return @ordered;
+}
+
+# counterpart to MP::Model::Base::column_names
+sub field_names
+{
+    my ( $proto ) = @_;
+    
+    map {
+        my $col = $_;
+        $col =~ s/_+(\w)?/ \U$1/g;
+        $_ => ucfirst $col
+    } $proto->related; # has_many accessors
+
+}
 
 # ------------------------------------------------------------ exported methods -----
 
@@ -523,16 +638,23 @@ sub addnew : Exported
     
     my $form = $r->as_form;
     
-    return $self->list( $r ) unless $form->submitted && $form->validate;
+#    return $self->list( $r ) unless $form->submitted;    
+#    die 'Failed validation' unless $form->validate;
     
-    $r->model_class->create_from_form( $form ) || die "Unexpected create error";
+    return unless $form->submitted && $form->validate;
     
-    $self->list( $r );
+    my $new = $r->model_class->create_from_form( $form ) || die "Unexpected create error";
+
+    # to return to the list view:    
+    #return $self->list( $r );
     
     # to return to the view of the new object:
-    # my $obj = $r->model_class->create_from_form( $form ) || die "Unexpected create error";
-    # $r->objects( [ $obj ] );
-    # $self->view( $r );
+    #$r->objects( [ $new ] );
+    #return $self->view( $r );
+    
+    # to return to the edit template:
+    $r->objects( [ $new ] );
+    return $self->edit( $r );    
 }
 
 =item addto
@@ -569,7 +691,7 @@ sub addto : Exported
         
         $r->model_class( $add_to_class );
         
-        return $add_to->view( $r );
+        return $add_to->edit( $r );
     }
     else
     {
@@ -644,7 +766,7 @@ sub addmany : Exported
     
     $r->model_class( ref $parent );    
     
-    return $self->view( $r );
+    return $self->edit( $r );
 }
 
 =item edit
@@ -664,6 +786,42 @@ sub edit : Exported
     $r->action( 'edit' );
     
     $r->template( 'edit' );
+}
+
+# this handles a form submitted to the related object at the far end of a has_a relationship - 
+# we want to return to the edit template for the parent object, not the related object
+sub edit_all_has_a : Exported
+{
+    my ( $self, $r ) = @_;
+    
+    my $form = $r->as_form;
+    
+#    use Data::Dumper;
+#    
+#    my $oks = $form->submitted;
+#    my $okv = $form->validate;
+#    die $form->name . " submitted: $oks validated: $okv " . Dumper( scalar $form->field );
+    
+    return unless $form->submitted && $form->validate;
+    
+    my $parent_class = $form->field( '__parent_class__' );
+    my $parent_id    = $form->field( '__parent_id__' );
+    
+    my $parent = $parent_class->retrieve( $parent_id );
+    
+    my $child = $self->update_or_create_from_form( $form );
+    
+    my $has_a = $parent->meta_info( 'has_a' );
+    my $meta = List::Util::first { $_->foreign_class eq ref( $child ) } values %$has_a;
+    my $column = $meta->accessor;
+    my $mutator = $column->mutator;
+    
+    $parent->$mutator( $child );
+    
+    $r->action( 'edit' );
+    $r->template( 'edit' );
+    $r->model_class( $parent_class );
+    $r->objects( [ $parent ] );
 }
 
 =item do_edit
@@ -960,6 +1118,7 @@ sub stringify_column {
     my $class = shift;
     return (
         $class->columns("Stringify"),
+        ( grep { /^(name|title)$/i } $class->columns ),
         ( grep { /(name|title)/i } $class->columns ),
         ( grep { !/id$/i } $class->primary_columns ),
     )[0];
@@ -975,22 +1134,39 @@ sub adopt {
 
 sub do_pager {
     my ( $self, $r ) = @_;
+    
+    my $page = $r->query->{page} ? $r->query->{page} : $r->session->{current_page}->{ $r->model_class };
+    
+    $r->session->{current_page}->{ $r->model_class } = $page;
+    
     if ( my $rows = $r->config->rows_per_page ) {
         return $r->{template_args}{pager} =
-          $self->pager( $rows, $r->query->{page} );
+          $self->pager( $rows, $page );
     }
     else { return $self }
 }
 
+# 2.10 - much better!
 sub order {
     my ( $self, $r ) = @_;
-    my $order;
     my %ok_columns = map { $_ => 1 } $self->columns;
-    if ( $order = $r->query->{order} and $ok_columns{$order} ) {
-        $order .= ( $r->query->{o2} eq "desc" && " DESC" );
-    }
-    $order;
+    my $q = $r->query;
+    my $order = $q->{order};
+    return unless $order and $ok_columns{$order};
+    $order .= ' DESC' if $q->{o2} and $q->{o2} eq 'desc';
+    return $order;
 }
+
+# 2.09
+#sub order {
+#    my ( $self, $r ) = @_;
+#    my $order;
+#    my %ok_columns = map { $_ => 1 } $self->columns;
+#    if ( $order = $r->query->{order} and $ok_columns{$order} ) {
+#        $order .= ( $r->query->{o2} eq "desc" && " DESC" );
+#    }
+#    $order;
+#}
 
 sub setup_database {
     my ( $class, $config, $namespace, $dsn, $u, $p, $opts ) = @_;

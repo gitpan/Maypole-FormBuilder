@@ -3,10 +3,10 @@ package Maypole::FormBuilder;
 use warnings;
 use strict;
 
-our $VERSION = 0.32;
+our $VERSION = 0.4;
 
-# $Rev: 362 $
-# $Date: 2005-08-03 23:57:58 +0100 (Wed, 03 Aug 2005) $
+# $Rev: 388 $
+# $Date: 2005-08-11 21:50:26 +0100 (Thu, 11 Aug 2005) $
 
 =head1 NAME
 
@@ -79,6 +79,13 @@ do C<[% mclass = Class(request.model_class) %]> because C<Class> creates a
 Proxy object around the model class.
     
 =back
+
+=head2 Random notes
+
+If you build a form, and it has no 'name' or 'id' defined, you have probably called C<as_form> on a CDBI 
+class or object, rather than on the Maypole request object. I often do this when building a form 
+for a different object or class from that represented in the request. Use the 'entity' argument to 
+Maypole::Plugin::FormBuilder::as_form() to do this. 
 
 =head1 AUTHOR
 

@@ -1,5 +1,55 @@
 Revision history for Maypole-FormBuilder
 
+0.4
+
+        - new dependencies: Maypole::Plugin::LinkTools, Maypole::Plugin::Session,
+            URI and URI::QueryParam, List::Util
+
+        - Maypole::FormBuilder::Model
+            - new methods:
+                - several new *_columns() and *_fields() methods
+                - hasa_columns() returns a list of columns that are in has_a relationships
+                - field_names() - provides names (i.e. labels) for has_many accessors, just 
+                    like Maypole::Model::Base::column_names() does for columns
+                - edit_all_has_a() - Exported method
+                
+            - display_columns() returns the columns in the order they are specified in 
+                the database
+            
+            - various additions and modifications to setup_form_mode(), to support 
+                new templates, and to move code out of the templates and into the model,
+                and to use the new *_columns and *_fields methods
+                
+            - do_pager() records the current page in the session
+            - copied new version of order() from Maypole::Model::CDBI in version 2.10
+            
+        - Maypole::Plugin::FormBuilder
+            - added table_labels slot to config object, and populate it in setup()
+            - ensure each class has its own private form_builder_defaults hashref
+                (in setup())
+            - factored out _get_form_args()
+            - removed no_textareas option from as_forms - it's hard-wired in render_form_as_row() 
+                now
+            - forms now pass a unique ID in their action, to be used to prevent multiple
+                submissions (_add_unique_id)
+            - _form_args now allows MP::FB::Model::setup_form_mode() to change the CDBI/Maypole 
+                object the form is built from 
+            
+        - templates
+            - new templates
+                - custom_css         - loads a class-specific css file, if one exists
+                - /beer/css/beer.css - example class-specific css file
+                - addmany
+                - edit_all_has_a
+                - view_all_has_a
+            
+            - modifications to edit, header, addto, maypole.css, addnew, addmany, 
+                generally moving perl code out of the template and into setup_form_mode()
+            - moved maypole.css back into the css subdirectory
+            - if /css/maypole_local.css exists, it will be loaded
+            - if /css/$table.css exists for the current model_class, it will be loaded 
+                e.g. /beer/css/beer.css in the factory templates
+
 0.32    Tues 9 Aug  2005, 1:20
         - pass the Maypole request object to CGI::FB, instead of the CGI or Apache request object,
             since Maypole has a suitable params() method - suggested by Dave Howarth
@@ -14,7 +64,7 @@ Revision history for Maypole-FormBuilder
             
         - templates
             - edit  - simplified generation and layout of has_many forms
-            - addto - simplified, moved code into setup_from_mode()
+            - addto - simplified, moved code into setup_form_mode()
             - addmany - supports adding multiple items in a has_many relationship
             - maypole.css - slight tweaks
             - list - slight tweaks

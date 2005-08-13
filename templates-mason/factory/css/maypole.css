@@ -31,6 +31,17 @@ a:hover {
     color: <% $link_hover %>;
 }
 
+#navcontainer a, #navcontainer a:hover {
+    color: <% $header_link %>;
+}
+
+h1 a, h1 a:hover, h2 a, h2 a:hover, h3 a, hs a:hover, h4 a, h4 a:hover {
+    color: <% $header_link %>;
+}
+
+th a, th a:hover {
+    color: <% $header_link %>;
+}
 
 /* ---------------------------------------------- headings */
 
@@ -262,6 +273,22 @@ legend {
     float: left;
 }
 
+.addto {
+    border: 1px solid <% $border %>;
+    padding: 1em;
+    margin-bottom: 1em;
+}
+
+.fleft {
+    float: left;
+    border: 1px solid <% $border %>;
+    padding: 1em;
+    margin-bottom: 1em;
+    margin-right: 0.5em;
+    width: 45%;
+}
+
+
 
 /* ---------------------------------------------- forms */
 
@@ -300,6 +327,11 @@ input.ReadOnly, input.Disabled {
     background-color: <% $greyed_out %>;
 }
 
+input.InvisibleDummy {
+    border: 0;
+    background-color: <% $bg_light %>;
+}
+
 
 textarea {
     width: 200px;
@@ -334,8 +366,10 @@ select {
     
     my $greyed_out      = '#eee';
     
-    my $link            = '#225';
-    my $link_hover      = '#222';
+    my $header_link     = '#225';
+    
+    my $link            = 'blue'; # '#225';
+    my $link_hover      = 'blue'; # '#222';
     
     my $bg_light        = '#f3f6f8';   
     my $bg_dark         = '#b5cadc';    # e.g. nav tabs

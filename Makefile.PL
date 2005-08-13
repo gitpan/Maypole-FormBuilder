@@ -7,17 +7,21 @@ WriteMakefile
           'PREREQ_PM' => {
                            'Class::DBI' => '0',
                            'Class::DBI::AbstractSearch' => '0',
-                           'Class::DBI::FormBuilder' => '0.43',
+                           'Class::DBI::FormBuilder' => '0.44',
                            'Class::DBI::Loader' => '0',
                            'Class::DBI::Pager' => '0',
                            'Class::DBI::Plugin::RetrieveAll' => '0',
                            'HTML::TreeBuilder' => '0',
-                           'Maypole::Config' => '0',
-                           'Maypole::Model::Base' => '0',
-                           'Maypole::Plugin::QuickTable' => '0.322',
+                           'List::Util' => '0',
+                           'Maypole' => '2.1',
+                           'Maypole::Plugin::LinkTools' => '0.1',
+                           'Maypole::Plugin::QuickTable' => '0.4',
+                           'Maypole::Plugin::Session' => '0.2',
                            'NEXT' => '0',
                            'Test::More' => '0',
-                           'UNIVERSAL::require' => '0'
+                           'UNIVERSAL::require' => '0',
+                           'URI' => '0',
+                           'URI::QueryParam' => '0'
                          },
           'INSTALLDIRS' => 'site',
           'PL_FILES' => {}

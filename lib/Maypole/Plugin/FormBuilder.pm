@@ -10,7 +10,10 @@ use Maypole::FormBuilder::View;
 use Maypole::Config;
 use Maypole::FormBuilder;
 
-Maypole::Config->mk_accessors( qw( form_builder_defaults pager_class ) );
+use URI;
+use URI::QueryParam;
+    
+Maypole::Config->mk_accessors( qw( form_builder_defaults pager_class table_labels ) );
 
 our $VERSION = $Maypole::FormBuilder::VERSION;
 
@@ -130,21 +133,31 @@ but it will not show the editable list view.
 
 sub setup
 {
-    my $class = shift;
+    my $r = shift; # class name
     
     # ensure Maypole::setup() is called, which will load the model class
-    $class->NEXT::DISTINCT::setup( @_ );
+    $r->NEXT::DISTINCT::setup( @_ );
 
-    $class->config->{form_builder_defaults} ||= {};
-    $class->config->{pager_class}           ||= 'Class::DBI::Pager';
+    warn "Running " . __PACKAGE__ . " setup for $r" if $r->debug;
     
-    my $model = $class->config->model ||
-        die "Please configure a model in $class before calling setup()";
+    $r->config->{form_builder_defaults} ||= {};
+    $r->config->{pager_class}           ||= 'Class::DBI::Pager';
+    
+    my $model = $r->config->model ||
+        die "Please configure a model in $r before calling setup()";
         
-    my $pager = $class->config->{pager_class};
+    my $pager = $r->config->{pager_class};
     
     eval "package $model; use $pager";
     die $@ if $@;
+    
+    # table labels
+    my $labels = { map { $_ => ucfirst( $_ ) } @{ $r->config->display_tables } };
+    s/_/ /g for values %$labels;    
+    $r->config->table_labels( $labels );    
+
+    # give each class its own private ref, or else everyone will end up sharing the same settings:
+    $_->form_builder_defaults( {} ) for @{ $r->config->classes };
 }
 
 =item init
@@ -222,10 +235,9 @@ objects. To use a different object or model, pass it in the C<entity> argument:
 =back
 
 =cut
-
+        
 sub as_form
 {
-    #my ( $r, %args_in ) = @_;
     my $r = shift;
     
     my $mode = shift if @_ % 2;
@@ -235,8 +247,23 @@ sub as_form
     $args_in{mode} = $mode if $mode;
     
     my ( $entity, %args ) = $r->_form_args( %args_in );
+
+    return $r->_add_unique_id( $entity->as_form( %args ) );
+}
+
+sub _add_unique_id
+{
+    my ( $r, $form ) = @_;
     
-    return $entity->as_form( %args );
+    my $action = $form->action;
+    
+    my $uri = URI->new( $form->action );
+    
+    $uri->query_param_append( __form_id => $r->make_random_id );
+    
+    $form->action( $uri->as_string );
+    
+    return $form;
 }
 
 =item as_multiform
@@ -259,63 +286,72 @@ sub as_multiform
     
     my ( $entity, %args ) = $r->_form_args( %args_in );
     
-    return $entity->as_multiform( %args, how_many => $how_many );
+    return $r->_add_unique_id( $entity->as_multiform( %args, how_many => $how_many ) );
 }
 
 sub _form_args
 {
     my ( $r, %args ) = @_;
     
+    %args = $r->_merge_form_args( %args );
+    
     my $entity = delete( $args{entity} ) || ( @{ $r->objects || [] } )[0] || $r->model_class;
     
     die "Entity $entity does not inherit from Maypole::Model::Base" 
         unless $entity->isa( 'Maypole::Model::Base' );
     
-    %args = $r->_get_form_args( $entity, %args );
+    $args{mode} ||= $r->action;
     
     $args{params} ||= $r; # $r has a suitable param() method
 
     # now modify for the Maypole action/mode 
-    my $spec = $entity->setup_form_mode( $r, \%args );
+    my $spec = $entity->setup_form_mode( $r, { %args } );
+    
+    $entity = delete( $spec->{entity} ) if $spec->{entity};
+    
+    $spec->{name} ||= $r->_make_form_name( $entity, $args{mode} );
     
     return $entity, %$spec;    
 }
 
-sub _get_form_args
+sub _merge_form_args
 {
-    my ( $r, $proto, %args ) = @_;
+    my ( $r, %args ) = @_;
 
     # CDBI::FB will later merge in %{ $proto->form_builder_defaults }, 
     %args = ( %{ $r->config->form_builder_defaults }, 
               %args,
               );
-              
-    $args{mode} ||= $r->action;
-    
-    # NO! this is an as_form, so it should not have related fields.
-    # And anyway, we can leave this to CDBI::FB to figure out a default.
-    #$args{fields} ||= [ $r->_columns_and_has_many_accessors( $proto ) ]; 
 
-    # Give every form a (hopefully) unique name.
+    return %args;              
+}
+
+# Give every form a unique name.
+sub _make_form_name
+{
+    my ( $r, $proto, $mode ) = @_;
+    
+    die 'no mode' unless $mode;
+    
     my @name;
     
-    if ( my $cl = ref( $proto ) )
+    if ( my $class = ref( $proto ) )
     {
-        push @name, $cl, $args{mode}, map { $proto->get( $_ ) } $proto->primary_columns;
+        push @name, $class, $mode, map { $proto->get( $_ ) } $proto->primary_columns;
     }
     else
     {
-        push @name, $proto, $args{mode};
+        push @name, $proto, $mode;
     }
     
     # Need to use a separator that is legal in javascript function names (not .) and 
     # CSS identifiers (not _ ?). Need to use a separator in case of multiple primary columns.
     # CGI::FB will still add an underscore to some identifiers though, so we'll use '_'. 
-    $args{name} ||= join( '_', @name ); 
+    my $name = join( '_', @name ); 
                           
-    $args{name} =~ s/[^\w]+/_/g;
-
-    return %args;
+    $name =~ s/[^\w]+/_/g;
+    
+    return $name;
 }
 
 =item search_form
@@ -329,6 +365,12 @@ sub search_form
 {
     my ( $r, %args ) = @_;
     
+    $args{required} ||= [];
+    
+    # this has to come after setting 'required', so we don't pick up a default 'required' setting 
+    # intended for other forms of this class
+    %args = $r->_merge_form_args( %args );
+    
     my $class = delete( $args{entity} ) || $r->model_class;
     
     # this is probably not true, since CDBI::FB is careful to change an object into a class
@@ -338,9 +380,7 @@ sub search_form
     # this must be set before calling _get_form_args()
     $args{mode} ||= 'search'; # or do_search - both set the form action to do_search in setup_form_mode()
     
-    $args{required} ||= [];
-    
-    %args = $r->_get_form_args( $class, %args );
+    $args{name} ||= $r->_make_form_name( $class, $args{mode} );
     
     my $get_request = $r->can( 'ar' ) || $r->can( 'cgi' ) || die "no method for getting request";    
     
@@ -348,53 +388,41 @@ sub search_form
     
     my $spec = $class->setup_form_mode( $r, \%args );
     
-    return $class->search_form( %$spec );
+    return $r->_add_unique_id( $class->search_form( %$spec ) );
 }
     
 =item as_forms( %args )
 
-    %args = ( objects       => $object|$arrayref_of_objects,    defaults to $r->objects
-              no_textareas  => true|false value,                default false
+    %args = ( objects => $object|$arrayref_of_objects,   # defaults to $r->objects
               %other_form_args,
               );
 
 Generates multiple forms and returns them as a list.
 
-You will probably want to set C<no_textareas> to true (converts them to text inputs), and perhaps 
-reduce C<selectnum> to generate popup menus rather than multiple radiobuttons or checkboxes 
-( see the C<list> template in this distribution).
+You may want to reduce C<selectnum> to generate popup menus rather than multiple radiobuttons 
+or checkboxes ( see the C<list> template in this distribution).
 
 =cut
 
 sub as_forms
 {
-    my ( $r, %args ) = @_;
+    my $r = shift;
     
-    my $objects       = delete $args{objects} || $r->objects;
-    my $no_textareas  = delete $args{no_textareas};
+    my $mode = shift if @_ % 2;
+    
+    my %args = @_;
+    
+    $args{mode} = $mode if $mode;
+    
+    my $objects = delete $args{objects} || $r->objects;
     
     my @objects = ref( $objects ) eq 'ARRAY' ? @$objects : ( $objects );
     
-    my @forms;
+    my @forms = map { $r->_add_unique_id( $_ ) } 
+                map { $r->as_form( %args, entity => $_ ) } 
+                @objects;
     
-    foreach my $object ( @objects )
-    {
-        my $form = $r->as_form( %args, entity => $object );
-        
-        push @forms, $form;
-        
-        next unless $no_textareas;
-                                    
-        foreach my $field ( $form->field )
-        {
-            # change textareas into text inputs
-            $form->field( name => $field,
-                          type => 'text',
-                          ) if $field->type eq 'textarea';
-        }   
-    }
-    
-    return @forms;
+    return @forms;    
 }    
 
 =item render_form_as_row( $form )
@@ -408,6 +436,7 @@ Yes, it's bad XHTML - suggestions about how to do this legally would be good.
 =cut
     
 # chopped out of CGI::FormBuilder::render()
+# XXX - maybe better implemented as a post-processor now
 sub render_form_as_row
 {
     my ( $r, $form ) = @_;
@@ -432,6 +461,8 @@ sub render_form_as_row
     
     foreach my $field ( $form->field ) 
     {
+        $field->type( 'text' ) if $field->type eq 'textarea';
+        
         push( @unhidden, $field ), next if $field->type ne 'hidden';
         
         $html .= $field->tag . "\n";   # no label/etc for hidden fields
@@ -498,7 +529,7 @@ sub listviewmode
 {
     my ( $r, $new_mode ) = @_;
     
-    return 'list' unless $r->can( 'session' );
+    return 'list' unless $r->can( 'session' ); 
     
     my $mode = $r->session->{listviewmode} || 'list';
     

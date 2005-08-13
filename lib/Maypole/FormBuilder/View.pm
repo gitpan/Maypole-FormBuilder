@@ -5,6 +5,9 @@ use warnings;
 use Maypole::FormBuilder;
 our $VERSION = $Maypole::FormBuilder::VERSION;
 
+# Maypole::Plugin::FormBuilder::init() does some funky messing about, which results in 
+# this view class inheriting from Maypole::View::Base
+
 =over
 
 =item vars

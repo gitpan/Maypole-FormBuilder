@@ -1,29 +1,27 @@
 
-<h2>Edit a <% $request->model_class->moniker %></h2>
-
 % foreach my $item ( @$objects ) {
-<div id="addnew">
+
+<h2>Edit <% $request->model_class->moniker %>: <% $item %></h2>
+
+<div class="fleft">
 <fieldset>
-<legend>Edit <% $item->get( $item->stringify_column ) %></legend>
+<legend><% $item->stringify_self %></legend>
 <% $request->as_form->render %>
 
-% my @data = $request->tabulate( objects        => $item, 
-%                                with_colnames  => 1, 
-%                                fields         => [ $item->edit_fields ], 
-%                                field_callback => sub { $m->scomp( 'addto', add_to => $_[0],
-%                                                                            field  => $_[1],
-%                                                                            ) },
-%                                
-%                                );
+<h2>Add related records</h2>
 
-<% $request->quick_table( td => { valign => 'top' } )->render( @data ) %>
+% foreach my $related ( $item->edit_fields ) {
+<& addto, add_to => $item, field => $related &>
+% }
 
 </fieldset>
 
+% # this form does *not* work yet - it's just a placeholder for when CDBI::FB implements this
+% # <& edit_with_related, item => $item &>
+
 </div>
 
-% # this form does *not* work yet - it's just a placeholder for when CDBI::FB implements this
-<& edit_with_related, item => $item &>
+<& edit_all_has_a, object => $item &>
 
 % }
 
