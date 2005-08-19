@@ -11,6 +11,7 @@ WriteMakefile
                            'Class::DBI::Loader' => '0',
                            'Class::DBI::Pager' => '0',
                            'Class::DBI::Plugin::RetrieveAll' => '0',
+                           'Class::Inspector' => '0',
                            'HTML::TreeBuilder' => '0',
                            'List::Util' => '0',
                            'Maypole' => '2.1',

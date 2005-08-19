@@ -1,7 +1,11 @@
 Revision history for Maypole-FormBuilder
 
-0.4
+0.41    Fri 19 August, 2005 15:50
+        - do_pager (and Mp::FB) now works even without sessions (Dave Howorth)
+        - slight tweak to setup_form_mode() to ignore process_fields setting in the 
+            button modes
 
+0.4     Sat 13 August, 2005
         - new dependencies: Maypole::Plugin::LinkTools, Maypole::Plugin::Session,
             URI and URI::QueryParam, List::Util
 

@@ -25,6 +25,7 @@ my $builder = Module::Build->new(
         'URI' => 0,
         'URI::QueryParam' => 0,
         'List::Util' => 0,
+        'Class::Inspector' => 0,
         
     },
     add_to_cleanup      => [ 'Maypole-FormBuilder-*' ],

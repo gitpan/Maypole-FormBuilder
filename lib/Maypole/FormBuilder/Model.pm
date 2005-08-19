@@ -124,6 +124,12 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
                                              action     => $maypole_action,
                                              %additional, 
                                              );
+            
+            # This is a hack to stop CDBI::FB from picking up process_fields settings from 
+            # form_builder_defaults and adding fields to the button form during form_process_extras. 
+            # Maybe it would be easier to just use a link instead...
+            $args->{process_fields}->{__SKIP_PROCESS_EXTRAS__}++;
+            
             $args->{fields}   = [];
             $args->{required} = []; # otherwise, CDBI::FB may add required cols, and the button gets a
                                     # heading about 'highlighted fields are required', even though it 
@@ -540,7 +546,7 @@ sub display_columns
     
     my %pk = map { $_ => 1 } $proto->primary_columns;
     
-    return grep { ! $pk{ $_ } } Class::DBI::FormBuilder->db_order_columns( $proto, 'All' );
+    return grep { ! $pk{ $_ } } Class::DBI::FormBuilder->table_meta( $proto )->columns( 'All' );
 }
 
 sub list_fields
@@ -573,8 +579,8 @@ sub hasa_columns
     my $has_a = $proto->meta_info( 'has_a' );
     
     my @ordered = grep { $has_a->{ $_->name } && $has_a->{ $_->name }->foreign_class->isa( 'Class::DBI' ) } 
-                  Class::DBI::FormBuilder->db_order_columns( $proto, 'All' );
-    
+                  Class::DBI::FormBuilder->table_meta( $proto )->columns( 'All' );
+                  
     return @ordered;
 }
 
@@ -1135,7 +1141,12 @@ sub adopt {
 sub do_pager {
     my ( $self, $r ) = @_;
     
-    my $page = $r->query->{page} ? $r->query->{page} : $r->session->{current_page}->{ $r->model_class };
+    my $page = $r->query->{page};
+     
+    if ( $r->can( 'session' ) )
+    {
+        $page ||= $r->session->{current_page}->{ $r->model_class };
+    }
     
     $r->session->{current_page}->{ $r->model_class } = $page;
     
