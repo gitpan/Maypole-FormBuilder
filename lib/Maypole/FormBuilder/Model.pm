@@ -128,7 +128,7 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
             # This is a hack to stop CDBI::FB from picking up process_fields settings from 
             # form_builder_defaults and adding fields to the button form during form_process_extras. 
             # Maybe it would be easier to just use a link instead...
-            $args->{process_fields}->{__SKIP_PROCESS_EXTRAS__}++;
+            #$args->{process_fields}->{__SKIP_PROCESS_EXTRAS__}++;
             
             $args->{fields}   = [];
             $args->{required} = []; # otherwise, CDBI::FB may add required cols, and the button gets a
@@ -304,6 +304,8 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
             $args->{fields} = [];
             $args->{table}  = 0;
             $args->{submit} = 'add...';
+            
+            $args->{process_extras} = [ qw( __how_many__ __target_class__ __target_id__ ) ];
             
             if ( $mode_args )
             {
@@ -538,6 +540,14 @@ Defaults to C<display_columns>.
 
 Defaults to empty list, at least until I add C<addmany> support to C<addnew>.
 
+=item addmany_columns
+
+=item addmany_fields
+
+=item view_columns
+
+=item view_fields
+
 =cut
 
 sub display_columns
@@ -571,6 +581,9 @@ sub addmany_fields  { }
 sub view_columns { shift->display_columns }
 sub view_fields  { shift->related }
 
+=item hasa_columns
+
+=cut
 
 sub hasa_columns
 {
@@ -584,7 +597,13 @@ sub hasa_columns
     return @ordered;
 }
 
-# counterpart to MP::Model::Base::column_names
+=item field_names
+
+Counterpart to C<MP::Model::Base::column_names>. Returns a hash of field names to 
+field labels.
+
+=cut
+
 sub field_names
 {
     my ( $proto ) = @_;
@@ -613,16 +632,6 @@ despatching methods, such as C<editlist>.
 Some exported methods are defined in L<Maypole::FormBuilder::Model::Base|Maypole::FormBuilder::Model::Base>, 
 if they have no dependency on CDBI. But the likelihood of a FormBuilder distribution that doesn't depend 
 on L<Class::DBI::FormBuilder|Class::DBI::FormBuilder> is pretty low.
-
-=head3 Gotchas
-
-Sometimes you need to set the form mode in these methods, sometimes not. I B<think> that if 
-the mode matches the action, you don't need to set it. 
-So to get searching working, the C<do_search> mode needs to be set. Similarly for C<do_edit>, 
-except here the C<edit> mode needs to be set. Elsewhere the mode is automatically set to the 
-Maypole action. If you insert a line in CGI::FormBuilder::submitted() to 
-C<warn> the value of C<$smtag>, that needs to match the name of the submit button in 
-C<< $request->params >> (i.e. C<< $request->params->{$smtag} >> needs to be true). 
 
 =over 4
 
@@ -1058,6 +1067,26 @@ The point of co-ordination is the C<setup_form_mode> method. This supplies the s
 that must be synchronised by both versions of the form. C<setup_form_mode> selects a set of form 
 parameters based on the current C<action> of the Maypole request. 
 
+=head3 Gotchas
+
+=over 4 
+
+=item form mode
+
+Sometimes you need to set the form mode in these methods, sometimes not. If 
+the mode matches the action, you don't need to set it. 
+So to get searching working, the C<do_search> mode needs to be set. Similarly for C<do_edit>, 
+except here the C<edit> mode needs to be set. Elsewhere the mode is automatically set to the 
+Maypole action. 
+
+=item submit button name
+
+If you insert a line in C<CGI::FormBuilder::submitted()> to 
+C<warn> the value of C<$smtag>, that needs to match the name of the submit button in 
+C<< $request->params >> (i.e. C<< $request->params->{$smtag} >> needs to be true). 
+
+=back
+
 =head2 Maypole::Model::CDBI methods
 
 These methods are copied verbatim from L<Maypole::Model::CDBI|Maypole::Model::CDBI>. 
@@ -1223,8 +1252,6 @@ sub fetch_objects {
 David Baird, C<< <cpan@riverside-cms.co.uk> >>
 
 =head1 TODO
-
-Refactor setup_form_mode() into a dispatch table.
 
 I think splitting modes into search and do_search, and edit and do_edit, is 
 probably unnecessary.

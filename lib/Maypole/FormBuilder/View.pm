@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use Maypole::FormBuilder;
-use Class::Inspector;
+#use Class::Inspector;
 
 our $VERSION = $Maypole::FormBuilder::VERSION;
 

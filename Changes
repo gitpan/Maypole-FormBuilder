@@ -1,5 +1,10 @@
 Revision history for Maypole-FormBuilder
 
+0.411   Tues 23 August, 2005 12:00
+        - fixed search_form to set $r as the param object - reported by Dave Howorth
+        - support TT's way of passing args that look like a hash, as a hashref - patch 
+            from Dave Howorth
+
 0.41    Fri 19 August, 2005 15:50
         - do_pager (and Mp::FB) now works even without sessions (Dave Howorth)
         - slight tweak to setup_form_mode() to ignore process_fields setting in the 

@@ -206,15 +206,25 @@ There are a few additional Maypole-specific options:
 The form generated depends on the C<mode>. Defaults to the current action. 
 
 As a special case, you can pass this as a positional argument, instead of a named 
-argument, i.e. 
+argument, i.e. these mean the same:
 
     my $form = $request->as_form( $mode );
-    
-    # or
+    my $form = $request->as_form( mode => $mode );
+    my $form = $request->as_form( { mode => $mode } );
+
+as do these:
+
+    my %args = ( whatever => whatever );
     
     my $form = $request->as_form( $mode, %args );
-
-Pass this argument to generate a different form from that specified by the current 
+    my $form = $request->as_form( $mode, \%args );
+    
+    $args{mode} = $mode;
+    
+    my $form = $request->as_form( %args );
+    my $form = $request->as_form( \%args );
+    
+Pass the mode argument to generate a different form from that specified by the current 
 value of C<< $r->action >>. For instance, to generate a search form to include on a 
 list template, say 
 
@@ -235,16 +245,47 @@ objects. To use a different object or model, pass it in the C<entity> argument:
 =back
 
 =cut
-        
+
+# arg processing is complicated:
+#  case 1 : mode
+#  case 2 : hashref
+#  case 3 : mode  argx2
+#  case 4 : mode  hashref
+#  case 5 : argx2
 sub as_form
 {
     my $r = shift;
     
-    my $mode = shift if @_ % 2;
+#    my $mode = shift if @_ % 2;
+#    my %args_in = @_;
+#    $args_in{mode} = $mode if $mode;
+
+    my ( $mode, %args_in );
     
-    my %args_in = @_;
-    
-    $args_in{mode} = $mode if $mode;
+    if ( @_ == 1 and not ref $_[0] )      # case 1
+    {
+        $args_in{mode} = shift;
+    }
+    elsif ( @_ == 1 )                     # case 2
+    {
+        %args_in =  %{$_[0]};
+    }
+    elsif ( @_ % 2 )                      # case 3
+    {
+        $mode = shift;
+        %args_in = @_;
+        $args_in{mode} = $mode;
+    }
+    elsif ( @_ == 2 and ref $_[1] )       # case 4
+    {
+        $mode = shift;
+        %args_in = %{ $_[0] };
+        $args_in{mode} = $mode;
+    }
+    else                                  # case 5
+    {
+        %args_in = @_;
+    }
     
     my ( $entity, %args ) = $r->_form_args( %args_in );
 
@@ -363,7 +404,9 @@ defaults to C<do_search>.
 
 sub search_form
 {
-    my ( $r, %args ) = @_;
+    #my ( $r, %args ) = @_;
+    my $r = shift;
+    my %args = ( @_ == 1 && ref $_[0] && ref $_[0] eq 'HASH' ) ? %{ $_[0] } : @_;
     
     $args{required} ||= [];
     
@@ -375,16 +418,14 @@ sub search_form
     
     # this is probably not true, since CDBI::FB is careful to change an object into a class
     # before building the form
-    die "search_form() must be called on a class, not an object" if ref( $class );
+    die "search_form() must be called on a class, not an object" if ref $class;
     
     # this must be set before calling _get_form_args()
     $args{mode} ||= 'search'; # or do_search - both set the form action to do_search in setup_form_mode()
     
     $args{name} ||= $r->_make_form_name( $class, $args{mode} );
     
-    my $get_request = $r->can( 'ar' ) || $r->can( 'cgi' ) || die "no method for getting request";    
-    
-    $args{params} ||= $r->$get_request;    
+    $args{params} ||= $r; # $r has a suitable param() method
     
     my $spec = $class->setup_form_mode( $r, \%args );
     
