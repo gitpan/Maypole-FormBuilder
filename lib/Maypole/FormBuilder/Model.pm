@@ -125,11 +125,6 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
                                              %additional, 
                                              );
             
-            # This is a hack to stop CDBI::FB from picking up process_fields settings from 
-            # form_builder_defaults and adding fields to the button form during form_process_extras. 
-            # Maybe it would be easier to just use a link instead...
-            #$args->{process_fields}->{__SKIP_PROCESS_EXTRAS__}++;
-            
             $args->{fields}   = [];
             $args->{required} = []; # otherwise, CDBI::FB may add required cols, and the button gets a
                                     # heading about 'highlighted fields are required', even though it 
@@ -220,6 +215,8 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
             $args->{submit} = 'submit';
             $args->{fields} = [ $proto->edit_columns ]; #, # $proto->related ];
             
+            $args->{process_extras} = [ qw( __parent_class__ __parent_id__ ) ];
+            
             # The appropriate setting will depend on your detailed setup and workflows. In the default 
             # setup, the edit page displays multiple forms, and after submitting one, the app returns to 
             # the edit page. If any other forms on the page have fields with the same name as the submitted 
@@ -259,6 +256,8 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
             $args->{action} = $r->make_path( table      => $proto->table,
                                             action     => 'addto',
                                             );
+                                            
+            $args->{process_extras} = [ qw( __target_class__ __target_id__ ) ];
                                             
             if ( $mode_args )
             {   # client form
@@ -642,8 +641,9 @@ means we need a separate method for creating new objects (in standard Maypole, a
 posts to C<do_edit>). But L<Class::DBI::FormBuilder|Class::DBI::FormBuilder> keeps things 
 simple.
 
-Note this method returns to the C<list> template, which is cute in the demo, but for real apps, you 
-probably want to return the user to the C<view> template instead.
+Note this method returns to the C<edit> template, which is useful in some situations, but for many apps, you 
+probably want to return the user to the C<view> template instead. Simply override C<addnew> in your model, 
+perhaps calling C<< $self->SUPER::addnew >> to perform the update, then return vis C<< $self->view( $r ) >>.
 
 =cut
 
@@ -652,9 +652,6 @@ sub addnew : Exported
     my ( $self, $r ) = @_;
     
     my $form = $r->as_form;
-    
-#    return $self->list( $r ) unless $form->submitted;    
-#    die 'Failed validation' unless $form->validate;
     
     return unless $form->submitted && $form->validate;
     

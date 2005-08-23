@@ -1,5 +1,10 @@
 Revision history for Maypole-FormBuilder
 
+0.412   Tues 23 August, 2005 17:15
+        - added custom fields to process_extras in ADDTO and EDIT_ALL_HAS_A 
+            entries in the setup_from_mode dispatch table, so that 
+            they actually get included in the forms
+
 0.411   Tues 23 August, 2005 12:00
         - fixed search_form to set $r as the param object - reported by Dave Howorth
         - support TT's way of passing args that look like a hash, as a hashref - patch 
