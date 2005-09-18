@@ -1,5 +1,8 @@
 Revision history for Maypole-FormBuilder
 
+0.413   Sun  18 Sept, 2005 20:45
+        - fix a failure in pod test script 
+
 0.412   Tues 23 August, 2005 17:15
         - added custom fields to process_extras in ADDTO and EDIT_ALL_HAS_A 
             entries in the setup_from_mode dispatch table, so that 

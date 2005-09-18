@@ -675,45 +675,36 @@ Adds a new item in a C<has_many> relationship.
 
 =cut
 
+# example: a brewery has_many beers, we're adding a new beer
+
+# Don't need to know anything about the target class (brewery) to create the 
+# new related item (beer),  because the id of the target class (brewery) is 
+# already supplied in the form submission i.e. the submitted form has details 
+# of a new beer, *including* the id of the brewery. 
+
+# The beer has_a brewery, so creating the new beer with the brewery id in place 
+# is the same as saying $brewery->add_to_beers( $beer )
 sub addto : Exported
 {
     my ( $self, $r ) = @_;
     
     my $form = $r->as_form;
     
-    # example: a brewery has_many beers, we're adding a new beer
+    # create_from_form tests $form->submitted && $form->validate
+    # If the test fails, we get an addto form again, populated with the
+    # data in the submission (i.e. sticky), and with validation
+    # errors reported by CGI::FB in the form.
+    return unless $r->model_class->create_from_form( $form );
     
-    # Don't need to know anything about the target class (brewery) to create the 
-    # new related item (beer),  because the id of the target class (brewery) is 
-    # already supplied in the form submission i.e. the submitted form has details 
-    # of a new beer, *including* the id of the brewery. 
+    my $add_to_class = $form->field( '__target_class__' );
+    my $add_to_id    = $form->field( '__target_id__' );
+    my $add_to       = $add_to_class->retrieve( $add_to_id );
     
-    # The beer has_a brewery, so creating the new beer with the brewery id in place 
-    # is the same as saying $brewery->add_to_beers( $beer )
+    $r->objects( [ $add_to ] );
+    $r->model_class( $add_to_class );
     
-    if ( $r->model_class->create_from_form( $form ) )
-    {
-        # but now we *do* need to know about the target, so we can return to the appropriate view
-        my $add_to_class = $form->field( '__target_class__' );
-        my $add_to_id    = $form->field( '__target_id__' );
-        
-        my $add_to = $add_to_class->retrieve( $add_to_id );
-        
-        $r->objects( [ $add_to ] );
-        
-        $r->model_class( $add_to_class );
-        
-        return $add_to->edit( $r );
-    }
-    else
-    {
-        # failed - go back to edit form - this is a point where it would be nice to have 
-        # the CDBI error from the failed create operation available somehow
-        #return $self->edit( $r ); - no, this will go back to the related class, not the target class
-        
-        die "Unexpected error creating related object"; # sorry about this...
-    }
-}
+    return $add_to->edit( $r ); # or view etc.
+} 
 
 =item addhowmany
 
@@ -800,8 +791,12 @@ sub edit : Exported
     $r->template( 'edit' );
 }
 
-# this handles a form submitted to the related object at the far end of a has_a relationship - 
-# we want to return to the edit template for the parent object, not the related object
+=item edit_all_has_a
+
+=cut
+
+# Handles a form submitted to the related object at the far end of a has_a relationship.
+# Returns to the edit template for the parent object, not the related object.
 sub edit_all_has_a : Exported
 {
     my ( $self, $r ) = @_;
@@ -1171,10 +1166,14 @@ sub do_pager {
      
     if ( $r->can( 'session' ) )
     {
+        # The user asks for a specific page by clicking a link, which 
+        # puts the page in the query. So move it into the session. 
+        # If the user doesn't specifically ask for a page, see if they 
+        # previously asked for one. Wherever $page comes from, put it 
+        # in the session.
         $page ||= $r->session->{current_page}->{ $r->model_class };
+        $r->session->{current_page}->{ $r->model_class } = $page;
     }
-    
-    $r->session->{current_page}->{ $r->model_class } = $page;
     
     if ( my $rows = $r->config->rows_per_page ) {
         return $r->{template_args}{pager} =
