@@ -104,6 +104,11 @@ td {
     background-color: [% bg_light %];
 }
 
+tr:hover {
+    background-color: #b5cadc;
+}
+
+
 .FormListTable table, .NavListTable table {
     width: 100%;
 }

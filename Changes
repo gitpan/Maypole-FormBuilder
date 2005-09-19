@@ -1,5 +1,8 @@
 Revision history for Maypole-FormBuilder
 
+0.42    Mon  19 Sept, 2005 11:40
+        - updated the TT templates (supplied by Ron McClain)
+
 0.413   Sun  18 Sept, 2005 20:45
         - fix a failure in pod test script 
 

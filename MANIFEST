@@ -7,7 +7,7 @@ lib/Maypole/FormBuilder/View.pm
 lib/Maypole/Plugin/FormBuilder.pm
 Makefile.PL
 MANIFEST
-META.yml			# Will be created by "make dist"
+META.yml
 README
 t/00-load.t
 t/pod-coverage.t
@@ -33,14 +33,23 @@ templates-mason/factory/search
 templates-mason/factory/title
 templates-mason/factory/view
 templates-mason/factory/view_all_has_a
+templates-tt/factory/addmany
 templates-tt/factory/addnew
+templates-tt/factory/addto
 templates-tt/factory/boxes
+templates-tt/factory/css/maypole.css
+templates-tt/factory/custom_css
 templates-tt/factory/edit
+templates-tt/factory/edit_all_has_a
+templates-tt/factory/edit_with_related
 templates-tt/factory/footer
 templates-tt/factory/frontpage
 templates-tt/factory/header
 templates-tt/factory/list
-templates-tt/factory/maypole.css
+templates-tt/factory/login
+templates-tt/factory/navbar
 templates-tt/factory/pager
 templates-tt/factory/search
+templates-tt/factory/title
 templates-tt/factory/view
+templates-tt/factory/view_all_has_a

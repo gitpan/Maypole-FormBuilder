@@ -1,5 +1,5 @@
-	</div>
-	[% USE dumper %]
-	<!-- request object: [% dumper.dump(request) %] -->
-    </body>
+</div>
+[% USE dumper %]
+[% dumper.dump(request) %]
+</body>
 </html>
