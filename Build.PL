@@ -18,7 +18,8 @@ my $builder = Module::Build->new(
         
         'Class::DBI::FormBuilder' => 0.46,
         
-        'Maypole::Plugin::QuickTable' => 0.41,
+        'Maypole::Plugin::QuickTable' => 0.421,
+        
         'Maypole::Plugin::LinkTools' => 0.2,
         'Maypole::Plugin::Session' => 0.2,
         

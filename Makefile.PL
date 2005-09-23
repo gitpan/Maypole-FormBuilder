@@ -15,7 +15,7 @@ WriteMakefile
                            'List::Util' => '0',
                            'Maypole' => '2.1',
                            'Maypole::Plugin::LinkTools' => '0.2',
-                           'Maypole::Plugin::QuickTable' => '0.41',
+                           'Maypole::Plugin::QuickTable' => '0.421',
                            'Maypole::Plugin::Session' => '0.2',
                            'NEXT' => '0',
                            'Test::More' => '0',

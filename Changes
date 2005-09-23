@@ -1,5 +1,8 @@
 Revision history for Maypole-FormBuilder
 
+0.431   Fri  23 Sept, 2005 23:10
+        - no code changes, require M-P-QT 0.421 in Build.PL
+
 0.43    Fri  23 Sept, 2005 22:40
 
         Class::DBI::FormBuilder 0.46 - has-many and many-many support has improved
