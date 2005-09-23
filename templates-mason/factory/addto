@@ -10,7 +10,7 @@
 </ol>
 % }
 
-<h3>Add a <% $related_class->moniker %> to <% $add_to->moniker %>: <% $add_to %></h3>
+<h3>Add a new <% $related_class->moniker %> to <% $add_to->moniker %>: <% $add_to %></h3>
 
 % # need to supply the entity argument because setup_form_mode is called *on* the entity, 
 % # it can't currently be used to *set* the entity, which is annoying and might change one day

@@ -1,0 +1,98 @@
+<div class="addto">
+
+<h2><% ucfirst( $related_class->plural_moniker ) %></h2>
+
+% if ( my @many = $request->maybe_many_link_views( $add_to->$field ) ) {
+<ol>
+% foreach my $link ( @many ) {
+<li><% $link %></li>
+% }
+</ol>
+% }
+
+<h3>Add a <% $related_class->moniker %> to <% $add_to->moniker %>: <% $add_to %></h3>
+
+% # need to supply the entity argument because setup_form_mode is called *on* the entity, 
+% # it can't currently be used to *set* the entity, which is annoying and might change one day
+<& .addto_form, related_class => $related_class, add_to => $add_to, field => $field &>
+
+<br />
+
+<& .addhowmany_form, related_class => $related_class, add_to => $add_to, how_many => 20 &>
+
+</div>
+
+<%once>
+    use HTML::FillInForm;
+</%once>
+<%shared>
+    my $file = $m->current_comp->source_file;
+</%shared>
+<%init>
+    my $related_class = $add_to->related_class( $request, $field );
+</%init>
+<%args>
+    $add_to
+    $field
+</%args>
+
+% # ---------------------------------------------------------------------------------
+<%def .addhowmany_form>
+    <%init>
+        
+        my $key = join ':', 'addhowmany', $related_class, ref( $add_to );
+        
+        my $template_updated = sub { $_[0]->get_created_at < (stat($file))[9] };
+        
+        my $html = $m->cache->get( $key, expire_if => $template_updated );
+        
+        if ( ! $html )
+        {
+            $html = $request->as_form( 'addhowmany', entity    => $related_class,
+                                                     mode_args => { addto    => $add_to,
+                                                                    how_many => 20,
+                                                                    }
+                                        )->render;
+        
+            $m->cache->set( $key => $html );
+        }
+            
+    </%init>
+    <% $html %>
+    <%args>
+        $related_class
+        $add_to
+        $how_many
+    </%args>
+</%def>
+
+% # ---------------------------------------------------------------------------------
+<%def .addto_form>
+    <%init>
+    
+        my $key = join ':', 'addto', $related_class, ref( $add_to );
+        
+        my $template_updated = sub { $_[0]->get_created_at < (stat($file))[9] };
+        
+        my $html = $m->cache->get( $key, expire_if => $template_updated );
+        
+        if ( ! $html )
+        {
+            $html = $request->as_form( 'addto', entity    => $related_class,
+                                                mode_args => { addto => $add_to,
+                                                               field => $field,
+                                                               },
+                                       )->render;
+        
+            $m->cache->set( $key => $html );
+        }
+            
+    </%init>
+    <% $html %>
+    <%args>
+        $related_class
+        $add_to
+        $field
+    </%args>
+</%def>
+

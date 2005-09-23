@@ -16,7 +16,8 @@ my $builder = Module::Build->new(
         
         'Class::DBI::Pager' => 0,
         
-        'Class::DBI::FormBuilder' => 0.451,
+        'Class::DBI::FormBuilder' => 0.46,
+        
         'Maypole::Plugin::QuickTable' => 0.41,
         'Maypole::Plugin::LinkTools' => 0.2,
         'Maypole::Plugin::Session' => 0.2,

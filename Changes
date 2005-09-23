@@ -1,5 +1,25 @@
 Revision history for Maypole-FormBuilder
 
+0.43    Fri  23 Sept, 2005 22:40
+
+        Class::DBI::FormBuilder 0.46 - has-many and many-many support has improved
+
+        - Maypole::FormBuilder::Model
+            - display_columns now includes has_many fields by default
+            - all the *_fields() methods are empty by default, except edit_fields()
+            
+        - Maypole::Plugin::FormBuilder
+            - _form_args() sets 'required' to the stringify_column(), unless it is 
+                already configured. This stops the default from being 'require all 
+                columns', which was a pain
+                
+        - Mason templates
+            - added caching versions of the main editing templates. In an app with a large
+                number of related tables, this speeds up the generation of the edit page 
+                by at least 4X. These templates are not used by default - see the edit_with_cache 
+                template for details.
+            
+
 0.42    Mon  19 Sept, 2005 11:40
         - updated the TT templates (supplied by Ron McClain)
 

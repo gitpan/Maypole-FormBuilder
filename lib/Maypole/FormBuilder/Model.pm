@@ -192,7 +192,7 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
         
         
         # -------------------------
-        # this is basically similar to EDIT, but needs a separate edit_as_has_a() exported method 
+        # this is basically similar to EDIT, but needs a separate edit_all_has_a() exported method 
         # to return to the parent object's edit template after submitting
         EDIT_ALL_HAS_A => sub
         {
@@ -555,15 +555,11 @@ sub display_columns
     
     my %pk = map { $_ => 1 } $proto->primary_columns;
     
-    return grep { ! $pk{ $_ } } Class::DBI::FormBuilder->table_meta( $proto )->columns( 'All' );
+    return grep { ! $pk{ $_ } } Class::DBI::FormBuilder->table_meta( $proto )->columns( 'All' ), 
+        $proto->related;
 }
 
-sub list_fields
-{
-    my ( $proto ) = @_;
-    
-    $proto->related;
-}
+sub list_fields { }
 
 sub search_columns { shift->display_columns }
 sub search_fields  {}
@@ -578,7 +574,7 @@ sub addmany_columns { shift->display_columns }
 sub addmany_fields  { }
 
 sub view_columns { shift->display_columns }
-sub view_fields  { shift->related }
+sub view_fields  {  }
 
 =item hasa_columns
 
@@ -613,6 +609,32 @@ sub field_names
         $_ => ucfirst $col
     } $proto->related; # has_many accessors
 
+}
+
+=item param
+
+Same interface as CGI's C<param> method, except read-only. 
+
+Useful for using with L<HTML::FillInForm>, used in the with-cache versions of 
+Maypole templates.
+
+=cut
+
+sub param
+{
+    my ( $self, $key ) = @_;
+    
+    die "param() is an instance method: called on class $self" unless ref $self;
+    
+    return $self->columns unless $key;
+    
+    my $column = $self->find_column( $key ) || return;
+    
+    my $accessor = $column->accessor;
+    
+    # force stringification, otherwise we'll get back objects which disturb 
+    # HTML::FillInForm
+    return ''.$self->$accessor;
 }
 
 # ------------------------------------------------------------ exported methods -----

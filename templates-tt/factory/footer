@@ -1,5 +1,3 @@
 </div>
-[% USE dumper %]
-[% dumper.dump(request) %]
 </body>
 </html>

@@ -1,0 +1,74 @@
+<div class="fleft">
+
+% foreach my $related_accessor ( map { $_->name } $object->hasa_columns ) {
+% my $related = $object->$related_accessor; 
+
+<fieldset>
+<legend><% $labels->{ $related->table } %> for <% $object->moniker %>: <% $object %></legend>
+<& .form, related => $related, 
+          object  => $object,
+          &>
+
+</fieldset>
+% }
+
+</div>
+
+<%once>
+    use HTML::FillInForm;
+</%once>
+<%args>
+    $object
+</%args>
+<%init>
+    return unless $object->hasa_columns;
+    my $labels = $config->table_labels;
+</%init>
+
+<%def .form>
+    <%args>
+        $object
+        $related
+    </%args>
+    <%init>
+        
+        my $file = $m->current_comp->owner->source_file;
+        
+        my $template_updated = sub { $_[0]->get_created_at < (stat($file))[9] };
+        
+        # the form action varies with these
+        my $key = $related->table.':'.$related->id;
+        
+        my $html = $m->cache->get( $key, expire_if => $template_updated );
+        
+        if ( ! $html )
+        {
+            $html = $request->as_form( 'edit_all_has_a', entity    => $related, 
+                                                         mode_args => { parent => $object },
+                                       )->render;
+            
+            $m->cache->set( $key => $html );
+        }
+    
+    </%init>
+    <% $html %>
+    <%filter>
+    
+        my $fif = HTML::FillInForm->new;
+        
+        my %rdata = map { $_ => $related->$_ } $related->columns;
+                
+        # see setup_from_mode() for the required form data
+        my $fdata = { __parent_class__ => ref( $object ),
+                      __parent_id__    => $object->id,
+                      %rdata,
+                      };
+    
+        $_ = $fif->fill( scalarref      => \$_,
+                         fdat           => $fdata,
+                         fill_password  => 0,
+                         );
+    
+    </%filter>
+</%def>
+

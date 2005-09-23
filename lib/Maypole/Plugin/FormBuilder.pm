@@ -288,7 +288,7 @@ sub as_form
     }
     
     my ( $entity, %args ) = $r->_form_args( %args_in );
-
+    
     return $r->_add_unique_id( $entity->as_form( %args ) );
 }
 
@@ -344,7 +344,7 @@ sub _form_args
     $args{mode} ||= $r->action;
     
     $args{params} ||= $r; # $r has a suitable param() method
-
+    
     # now modify for the Maypole action/mode 
     my $spec = $entity->setup_form_mode( $r, { %args } );
     
@@ -352,6 +352,11 @@ sub _form_args
     
     $spec->{name} ||= $r->_make_form_name( $entity, $args{mode} );
     
+    unless ( $spec->{required} or $entity->form_builder_defaults->{required} )
+    {
+        $spec->{required} = [ $entity->stringify_column ];
+    }
+
     return $entity, %$spec;    
 }
 

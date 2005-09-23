@@ -1,0 +1,70 @@
+<%doc>
+    The easiest way to use this template is to create your 
+    own 'edit' template that just says
+    
+    <& edit_with_cache &>
+    
+    The cache items are configured to expire whenever the template file is updated, 
+    but remember to empty the cache whenever the database structure is modified, 
+    or the CGI::FormBuilder settings are changed.
+    
+</%doc>
+
+% my $item = $objects->[0];
+
+<h2>Edit <% $request->model_class->moniker %>: <% $item %></h2>
+
+<div class="fleft">
+<fieldset>
+<legend><% $item->stringify_self %></legend>
+
+<& .mainform &>
+
+<h2>Add related records</h2>
+
+% foreach my $related ( $item->edit_fields ) {
+<& addto_with_cache, add_to => $item, field => $related &>
+% }
+
+</fieldset>
+
+% # this form does *not* work yet - it's just a placeholder for when CDBI::FB implements this
+% # <& edit_with_related, item => $item &>
+
+</div>
+
+<& edit_all_has_a_with_cache, object => $item &>
+
+<%def .mainform>
+    <%init>
+        my $file = $m->current_comp->owner->source_file;
+        
+        my $template_updated = sub { $_[0]->get_created_at < (stat($file))[9] };
+        
+        my $object = $request->objects->[0];
+        
+        my $key = join ':', $object->table, $object->id;
+        
+        my $html = $m->cache->get( $key, expire_if => $template_updated );
+        
+        if ( ! $html )
+        {
+            $html = $request->as_form->render;
+            
+            $m->cache->set( $key => $html );
+        }
+    </%init>
+    <% $html %>
+    <%filter>
+        my $object = $request->objects->[0];
+    
+        $_ = HTML::FillInForm->new->fill( scalarref => \$_,
+                                          fobject   => $object,
+                                          );
+    
+    </%filter>
+</%def>
+
+<%once>
+    use HTML::FillInForm;
+</%once>
