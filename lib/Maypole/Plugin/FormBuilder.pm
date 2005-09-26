@@ -129,6 +129,14 @@ but it will not show the editable list view.
 
 =item setup
 
+Called automatically by Maypole during compilation.
+
+Among other things, this method sets an empty hashref into each model's C<form_builder_defaults> 
+class data slot. This is done to prevent models inheriting each other's settings, but has the 
+side-effect of clobbering anything set up during model compilation. So you can't populate 
+C<form_builder_defaults> in the subclass itself. Instead, set up each subclass's 
+C<form_builder_defaults> in the application driver, after the C<setup()> call.
+
 =cut
 
 sub setup
@@ -287,9 +295,13 @@ sub as_form
         %args_in = @_;
     }
     
-    my ( $entity, %args ) = $r->_form_args( %args_in );
+    my ($entity, %args) = $r->_form_args(%args_in);
     
-    return $r->_add_unique_id( $entity->as_form( %args ) );
+    my $form = $entity->as_form(%args);
+    
+    $r->_add_unique_id($form);
+    
+    return $form;
 }
 
 sub _add_unique_id
@@ -303,8 +315,6 @@ sub _add_unique_id
     $uri->query_param_append( __form_id => $r->make_random_id );
     
     $form->action( $uri->as_string );
-    
-    return $form;
 }
 
 =item as_multiform
@@ -327,7 +337,11 @@ sub as_multiform
     
     my ( $entity, %args ) = $r->_form_args( %args_in );
     
-    return $r->_add_unique_id( $entity->as_multiform( %args, how_many => $how_many ) );
+    my $form = $entity->as_multiform( %args, how_many => $how_many );
+    
+    $r->_add_unique_id($form);
+    
+    return $form;
 }
 
 sub _form_args
@@ -434,7 +448,11 @@ sub search_form
     
     my $spec = $class->setup_form_mode( $r, \%args );
     
-    return $r->_add_unique_id( $class->search_form( %$spec ) );
+    my $form = $class->search_form(%$spec);
+
+    $r->_add_unique_id($form);
+    
+    return $form;
 }
     
 =item as_forms( %args )
@@ -464,7 +482,7 @@ sub as_forms
     
     my @objects = ref( $objects ) eq 'ARRAY' ? @$objects : ( $objects );
     
-    my @forms = map { $r->_add_unique_id( $_ ) } 
+    my @forms = map { $r->_add_unique_id($_); $_ } 
                 map { $r->as_form( %args, entity => $_ ) } 
                 @objects;
     

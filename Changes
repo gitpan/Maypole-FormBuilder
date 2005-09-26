@@ -1,5 +1,27 @@
 Revision history for Maypole-FormBuilder
 
+0.44    Mon  26 Sept, 2005 10:50
+        
+        - Maypole::FormBuilder::Model
+            - new param() method, just like CGI's - e.g. used in the new cacheable templates
+            - do_edit() sets the 'form_failed_validation' template_arg - used in the 
+                cacheable templates
+            - added 'view' button to edit form
+
+        - Maypole::FormBuilder::View
+            - ensures the 'form_failed_validation' template_arg is always exported  
+            
+        - Maypole::Plugin::FormBuilder
+            - documented how setup() clobbers every subclass's form_builder_defaults() if 
+                they were set up during compilation (i.e. if specified inside the package 
+                of the subclass, instead of after the setup() call in the driver).
+                
+        - Mason templates
+            - much-improved cacheing algorithms - now checks if the template or the object 
+                has been updated, and if the form has validation errors, before looking in 
+                the cache
+            - a couple of small cosmetic changes
+
 0.431   Fri  23 Sept, 2005 23:10
         - no code changes, require M-P-QT 0.421 in Build.PL
 

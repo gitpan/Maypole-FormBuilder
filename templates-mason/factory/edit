@@ -8,10 +8,12 @@
 <legend><% $item->stringify_self %></legend>
 <% $request->as_form->render %>
 
+% if ( $item->edit_fields ) {
 <h2>Add related records</h2>
 
 % foreach my $related ( $item->edit_fields ) {
 <& addto, add_to => $item, field => $related &>
+% }
 % }
 
 </fieldset>

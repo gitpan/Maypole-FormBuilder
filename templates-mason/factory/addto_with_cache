@@ -10,7 +10,7 @@
 </ol>
 % }
 
-<h3>Add a <% $related_class->moniker %> to <% $add_to->moniker %>: <% $add_to %></h3>
+<h3>Add a new <% $related_class->moniker %> to <% $add_to->moniker %>: <% $add_to %></h3>
 
 % # need to supply the entity argument because setup_form_mode is called *on* the entity, 
 % # it can't currently be used to *set* the entity, which is annoying and might change one day
@@ -40,21 +40,34 @@
 <%def .addhowmany_form>
     <%init>
         
-        my $key = join ':', 'addhowmany', $related_class, ref( $add_to );
+        my $key = join ':', 'addhowmany', $related_class, ref( $add_to ), $add_to->id;
+        
+        # 2005-05-27 16:52:13
+        my $tp = Time::Piece->strptime( $add_to->last_update, '%Y-%m-%d %H:%M:%S' );
         
         my $template_updated = sub { $_[0]->get_created_at < (stat($file))[9] };
+        my $object_updated   = sub { $_[0]->get_created_at < $tp->epoch };
+        my $out_of_date      = sub { $form_failed_validation  or
+                                     $object_updated->($_[0]) or 
+                                     $template_updated->($_[0]) 
+                                     };
         
-        my $html = $m->cache->get( $key, expire_if => $template_updated );
+        my $html = $m->cache->get( $key, expire_if => $out_of_date );
         
         if ( ! $html )
         {
-            $html = $request->as_form( 'addhowmany', entity    => $related_class,
+            my $form = $request->as_form( 'addhowmany', entity    => $related_class,
                                                      mode_args => { addto    => $add_to,
                                                                     how_many => 20,
                                                                     }
-                                        )->render;
-        
-            $m->cache->set( $key => $html );
+                                        );
+                                        
+            # must call validate() to set up error reporting 
+            $form->validate if $form_failed_validation->{addhowmany}->{ $add_to->table }->{ $add_to->id };
+            
+            $html = $form->render;
+            
+            $m->cache->set( $key => $html ) unless $form_failed_validation->{addhowmany}->{ $add_to->table }->{ $add_to->id };
         }
             
     </%init>
@@ -70,21 +83,34 @@
 <%def .addto_form>
     <%init>
     
-        my $key = join ':', 'addto', $related_class, ref( $add_to );
+        my $key = join ':', 'addto', $related_class, $field, ref( $add_to ), $add_to->id;
+        
+        # 2005-05-27 16:52:13
+        my $tp = Time::Piece->strptime( $add_to->last_update, '%Y-%m-%d %H:%M:%S' );
         
         my $template_updated = sub { $_[0]->get_created_at < (stat($file))[9] };
+        my $object_updated   = sub { $_[0]->get_created_at < $tp->epoch };
+        my $out_of_date      = sub { $form_failed_validation  or
+                                     $object_updated->($_[0]) or 
+                                     $template_updated->($_[0]) 
+                                     };
         
-        my $html = $m->cache->get( $key, expire_if => $template_updated );
+        my $html = $m->cache->get( $key, expire_if => $out_of_date );
         
         if ( ! $html )
         {
-            $html = $request->as_form( 'addto', entity    => $related_class,
+            my $form = $request->as_form( 'addto', entity    => $related_class,
                                                 mode_args => { addto => $add_to,
                                                                field => $field,
                                                                },
-                                       )->render;
+                                       );
         
-            $m->cache->set( $key => $html );
+            # must call validate() to set up error reporting 
+            $form->validate if $form_failed_validation->{addto}->{ $add_to->table }->{ $add_to->id };
+            
+            $html = $form->render;
+            
+            $m->cache->set( $key => $html ) unless $form_failed_validation->{addto}->{ $add_to->table }->{ $add_to->id };
         }
             
     </%init>

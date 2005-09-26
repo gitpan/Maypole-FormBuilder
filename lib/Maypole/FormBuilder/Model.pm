@@ -183,8 +183,8 @@ Maypole is pretty stable these days and it should be easy enough to keep up with
                                              );
                                             
             $args->{reset}  = 'reset';
-            $args->{submit} = 'submit';
-            $args->{fields} = [ $proto->edit_columns ], # $proto->related ];
+            $args->{submit} = [ qw/ submit view / ];
+            $args->{fields} = [ $proto->edit_columns ]; # $proto->related ];
             
             # see note in EDIT_ALL_HAS_A
             $args->{sticky} = 0;
@@ -613,28 +613,41 @@ sub field_names
 
 =item param
 
-Same interface as CGI's C<param> method, except read-only. 
+Same interface as CGI's C<param> method, except read-only, for the moment. 
 
-Useful for using with L<HTML::FillInForm>, used in the with-cache versions of 
-Maypole templates.
+Useful for example with L<HTML::FillInForm>:
+
+    my $cd = My::Music::CD->retrieve( $id );
+    
+    # $html contains an empty form
+    $html = HTML::FillInForm->new->fill( scalarref => \$html, fobject => $cd );
+
+Note that this method always returns scalars. For columns that inflate to non-CDBI 
+objects, the object is evaluated in string context. For columns that inflate to a CDBI 
+object, the raw column value is returned instead.
 
 =cut
 
+# must not return object - HTML::FillInForm chokes
 sub param
 {
-    my ( $self, $key ) = @_;
+    my ($self, $key) = @_;
     
     die "param() is an instance method: called on class $self" unless ref $self;
     
-    return $self->columns unless $key;
+    return map {$_->name} $self->columns unless $key;
     
-    my $column = $self->find_column( $key ) || return;
+    my $column = $self->find_column($key) || return;
     
     my $accessor = $column->accessor;
     
-    # force stringification, otherwise we'll get back objects which disturb 
-    # HTML::FillInForm
-    return ''.$self->$accessor;
+    my $value = $self->$accessor;
+    
+    return $value unless ref $value;
+    
+    return ''.$value unless UNIVERSAL::isa( $value, 'Class::DBI' );
+    
+    return $value->id;
 }
 
 # ------------------------------------------------------------ exported methods -----
@@ -872,13 +885,27 @@ sub do_edit : Exported
     my $form = $r->as_form( mode => $form_mode ); 
     
     # default template for this action
-    $r->template( 'edit' );
+    $r->template('edit');
     
     # Do nothing if no form submitted, or failed validation. If the latter, 
     # errors will be displayed by magic in the form. Note that if coming from 
     # editlist, any form errors will divert us to the edit template (showing errors), 
     # rather than returning to the editlist template. Which seems like the right behaviour.
-    return unless $form->submitted && $form->validate;
+    #return unless $form->submitted && $form->validate;
+    my $button = $form->submitted;
+     
+    return $self->view($r) if $button eq 'view';
+     
+    if ( ! $form->validate )
+    {
+        my $object = $r->objects->[0];
+        $r->template_args->{form_failed_validation}->{edit}->{ $object->table }->{ $object->id } = 1;
+        return;
+    }
+    
+    #return unless $button;
+    
+    Carp::croak "Unknown button: $button" unless $button eq 'submit';
     
     # This assumes the primary keys in the form (hidden fields) identify 
     # the same object as in the URL, which will already be in $r->objects->[0].
@@ -892,9 +919,9 @@ sub do_edit : Exported
     my $model = $r->model_class;
     
     # dunno why I was getting this error, probably don't need to check this now
-    Carp::croak( "model ($model) is not a class name!" ) if ref( $model );
+    Carp::croak( "model ($model) is not a class name!" ) if ref $model;
 
-    my $obj = $model->update_from_form( $form ) || 
+    my $obj = $model->update_from_form($form) || 
         die "Unexpected update error"; # Don't you just hate this kind of message?
     
     $r->objects( [ $obj ] );

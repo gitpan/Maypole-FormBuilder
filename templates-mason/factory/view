@@ -11,11 +11,6 @@
                           ) %>
 </div>
 
-<p><% $request->link( table  => $item->table,
-                      action => 'list',
-                      label  => 'Back to listing',
-                      ) %></p>
-
 <% $request->as_form( mode => 'edit_button',   entity => $item )->render %>
 <% $request->as_form( mode => 'delete_button', entity => $item )->render %>
 
